@@ -31,6 +31,23 @@ export function startPty(options: {
   const useCwd = cwd || process.cwd() || os.homedir();
   const useEnv = { TERM: 'xterm-256color', ...process.env, ...(env || {}) };
 
+  // Log custom env vars being applied
+  if (env && Object.keys(env).length > 0) {
+    const customEnvKeys = Object.keys(env).filter(k =>
+      k.startsWith('ANTHROPIC_') || k.startsWith('CLAUDE_')
+    );
+    if (customEnvKeys.length > 0) {
+      console.log('[ptyManager] Spawning shell with custom env vars:', {
+        shell: useShell,
+        customEnvKeys,
+        values: customEnvKeys.reduce((obj, key) => {
+          obj[key] = env[key];
+          return obj;
+        }, {} as Record<string, any>)
+      });
+    }
+  }
+
   const proc = pty.spawn(useShell, [], {
     name: 'xterm-256color',
     cols,

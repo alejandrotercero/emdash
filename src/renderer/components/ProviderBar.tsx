@@ -36,14 +36,14 @@ export const ProviderBar: React.FC<Props> = ({ provider, linearIssue }) => {
   return (
     <div className="px-6 pb-6 pt-4">
       <div className="mx-auto max-w-4xl">
-        <div className="relative rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+        <div className="relative rounded-md border border-neutral-800 bg-white shadow-lg dark:border-neutral-800 dark:bg-black">
           <div className="flex items-center rounded-md px-4 py-3">
             <div className="flex items-center gap-3">
               <TooltipProvider delayDuration={250}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div
-                      className="inline-flex h-7 cursor-default select-none items-center gap-1.5 rounded-md border border-gray-200 bg-gray-100 px-2 text-xs text-foreground dark:border-gray-700 dark:bg-gray-700"
+                      className="inline-flex h-7 cursor-default select-none items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-100 px-2 text-xs text-foreground dark:border-neutral-700 dark:bg-neutral-900"
                       role="button"
                       aria-disabled
                       title={cfg.name}
@@ -57,7 +57,7 @@ export const ProviderBar: React.FC<Props> = ({ provider, linearIssue }) => {
                         />
                       ) : (
                         <div
-                          className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-[3px] bg-gray-300 text-[9px] text-gray-700 dark:bg-gray-600 dark:text-gray-200"
+                          className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-[3px] bg-neutral-300 text-[9px] text-neutral-700 dark:bg-neutral-600 dark:text-neutral-200"
                           aria-hidden
                         >
                           {cfg.name.slice(0, 1)}
@@ -78,7 +78,7 @@ export const ProviderBar: React.FC<Props> = ({ provider, linearIssue }) => {
                     <TooltipTrigger asChild>
                       <button
                         type="button"
-                        className="inline-flex h-7 items-center gap-1.5 rounded-md border border-gray-200 bg-gray-100 px-2 text-xs text-foreground dark:border-gray-700 dark:bg-gray-700"
+                        className="inline-flex h-7 items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-100 px-2 text-xs text-foreground dark:border-neutral-700 dark:bg-neutral-900"
                         title={`${linearIssue.identifier} — ${linearIssue.title || ''}`}
                         onClick={() => {
                           try {
@@ -93,11 +93,11 @@ export const ProviderBar: React.FC<Props> = ({ provider, linearIssue }) => {
                     </TooltipTrigger>
                     <TooltipContent
                       side="bottom"
-                      className="max-w-sm bg-white text-foreground dark:bg-gray-900 dark:text-foreground"
+                      className="max-w-sm bg-white text-foreground dark:bg-neutral-950 dark:text-foreground"
                     >
                       <div className="text-xs">
                         <div className="mb-1.5 flex min-w-0 items-center gap-2">
-                          <span className="inline-flex shrink-0 items-center gap-1.5 rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 dark:border-gray-700 dark:bg-gray-800">
+                          <span className="inline-flex shrink-0 items-center gap-1.5 rounded border border-neutral-200 bg-neutral-100 px-1.5 py-0.5 dark:border-neutral-700 dark:bg-neutral-900">
                             <img src={linearLogo} alt="Linear" className="h-3.5 w-3.5" />
                             <span className="text-[11px] font-medium text-foreground">
                               {linearIssue.identifier}

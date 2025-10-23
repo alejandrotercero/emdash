@@ -37,10 +37,21 @@ export function registerPtyIpc(): void {
     ) => {
       try {
         const { id, cwd, shell, env, cols, rows } = args;
+
+        // Log custom env vars if present
+        if (env && Object.keys(env).length > 0) {
+          console.log('[ptyIpc] Starting PTY with custom env:', {
+            id,
+            shell,
+            envKeys: Object.keys(env),
+            env
+          });
+        }
+
         // Reuse existing PTY if present; otherwise create new
         const existing = getPty(id);
         const proc = existing ?? startPty({ id, cwd, shell, env, cols, rows });
-        log.debug('pty:start OK', { id, cwd, shell, cols, rows, reused: !!existing });
+        log.debug('pty:start OK', { id, cwd, shell, cols, rows, reused: !!existing, hasEnv: !!env });
         const wc = event.sender;
         owners.set(id, wc);
 

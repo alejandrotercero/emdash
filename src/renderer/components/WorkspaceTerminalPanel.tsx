@@ -46,77 +46,14 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
         </div>
       </div>
 
-      {(() => {
-        let isCharm = false;
-        try {
-          const p =
-            localStorage.getItem(`provider:last:${workspace.id}`) ||
-            localStorage.getItem(`provider:locked:${workspace.id}`) ||
-            localStorage.getItem(`workspaceProvider:${workspace.id}`);
-          isCharm = p === 'charm';
-        } catch {}
-        return (
-          <div
-            className={`bw-terminal flex-1 overflow-hidden ${effectiveTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
-          >
-            <TerminalPane
-              id={`workspace-${workspace.id}`}
-              cwd={workspace.path}
-              variant={effectiveTheme === 'dark' ? 'dark' : 'light'}
-              themeOverride={
-                effectiveTheme === 'dark'
-                  ? {
-                      background: '#1f2937',
-                      foreground: '#ffffff',
-                      cursor: '#ffffff',
-                      selectionBackground: '#ffffff33',
-                      // Keep ANSI backgrounds matching the dark theme background
-                      black: '#1f2937',
-                      red: '#ffffff',
-                      green: '#ffffff',
-                      yellow: '#ffffff',
-                      blue: '#ffffff',
-                      magenta: '#ffffff',
-                      cyan: '#ffffff',
-                      white: '#ffffff',
-                      brightBlack: '#ffffff',
-                      brightRed: '#ffffff',
-                      brightGreen: '#ffffff',
-                      brightYellow: '#ffffff',
-                      brightBlue: '#ffffff',
-                      brightMagenta: '#ffffff',
-                      brightCyan: '#ffffff',
-                      brightWhite: '#ffffff',
-                    }
-                  : {
-                      background: '#ffffff',
-                      foreground: '#000000',
-                      cursor: '#000000',
-                      selectionBackground: '#00000033',
-                      // Keep ANSI backgrounds white; force all other colors to black
-                      black: '#ffffff',
-                      red: '#000000',
-                      green: '#000000',
-                      yellow: '#000000',
-                      blue: '#000000',
-                      magenta: '#000000',
-                      cyan: '#000000',
-                      white: '#000000',
-                      brightBlack: '#000000',
-                      brightRed: '#000000',
-                      brightGreen: '#000000',
-                      brightYellow: '#000000',
-                      brightBlue: '#000000',
-                      brightMagenta: '#000000',
-                      brightCyan: '#000000',
-                      brightWhite: '#000000',
-                    }
-              }
-              className="h-full w-full"
-            />
-          </div>
-        );
-      })()}
+      <div className="flex-1 overflow-hidden">
+        <TerminalPane
+          id={`workspace-${workspace.id}`}
+          cwd={workspace.path}
+          variant={effectiveTheme === 'dark' ? 'dark' : 'light'}
+          className="h-full w-full"
+        />
+      </div>
     </div>
   );
 };

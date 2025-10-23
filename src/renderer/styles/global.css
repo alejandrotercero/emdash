@@ -11,7 +11,7 @@ body {
     'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #1a1a1a;
+  background-color: #000000;
   color: #ffffff;
   overflow: hidden;
 }
@@ -31,16 +31,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #2a2a2a;
+  background: #000000;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #555;
+  background: #2e2e2e;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #777;
+  background: #404040;
 }
 
 /* Utility classes */
@@ -123,24 +123,45 @@ body {
   font-weight: bold;
 }
 
+.text-neutral-400 {
+  color: #a3a3a3;
+}
+
+.text-neutral-500 {
+  color: #737373;
+}
+
+.bg-neutral-800 {
+  background-color: #0f0f0f;
+}
+
+.bg-neutral-900 {
+  background-color: #000000;
+}
+
+.border-neutral-700 {
+  border-color: #2e2e2e;
+}
+
+/* Legacy gray classes for compatibility */
 .text-gray-400 {
-  color: #9ca3af;
+  color: #a3a3a3;
 }
 
 .text-gray-500 {
-  color: #6b7280;
+  color: #737373;
 }
 
 .bg-gray-800 {
-  background-color: #1f2937;
+  background-color: #0f0f0f;
 }
 
 .bg-gray-900 {
-  background-color: #111827;
+  background-color: #000000;
 }
 
 .border-gray-700 {
-  border-color: #374151;
+  border-color: #2e2e2e;
 }
 
 .rounded {
@@ -156,7 +177,11 @@ body {
 }
 
 .hover\:bg-gray-700:hover {
-  background-color: #374151;
+  background-color: #1f1f1f;
+}
+
+.hover\:bg-neutral-700:hover {
+  background-color: #1f1f1f;
 }
 
 .cursor-pointer {

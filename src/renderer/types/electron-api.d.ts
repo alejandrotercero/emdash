@@ -329,6 +329,51 @@ declare global {
         workspaceId: string
       ) => Promise<{ success: boolean; conversation?: any; error?: string }>;
 
+      // Custom Claude configurations
+      saveCustomClaudeConfig: (config: {
+        id: string;
+        name: string;
+        baseUrl?: string;
+        model?: string;
+        smallFastModel?: string;
+        authToken?: string;
+        disableNonessentialTraffic: boolean;
+      }) => Promise<{ success: boolean; error?: string }>;
+      getCustomClaudeConfigs: () => Promise<{
+        success: boolean;
+        configs?: Array<{
+          id: string;
+          name: string;
+          baseUrl?: string;
+          model?: string;
+          smallFastModel?: string;
+          authToken?: string;
+          disableNonessentialTraffic: boolean;
+          createdAt: string;
+          updatedAt: string;
+        }>;
+        error?: string;
+      }>;
+      getCustomClaudeConfig: (id: string) => Promise<{
+        success: boolean;
+        config?: {
+          id: string;
+          name: string;
+          baseUrl?: string;
+          model?: string;
+          smallFastModel?: string;
+          authToken?: string;
+          disableNonessentialTraffic: boolean;
+          createdAt: string;
+          updatedAt: string;
+        } | null;
+        error?: string;
+      }>;
+      deleteCustomClaudeConfig: (id: string) => Promise<{
+        success: boolean;
+        error?: string;
+      }>;
+
       // Debug helpers
       debugAppendLog: (
         filePath: string,
@@ -387,13 +432,14 @@ declare global {
         error?: string;
       }>;
       agentSendMessageStream: (args: {
-        providerId: 'codex' | 'claude';
+        providerId: 'codex' | 'claude' | string;
         workspaceId: string;
         worktreePath: string;
         message: string;
         conversationId?: string;
+        customClaudeConfigId?: string;
       }) => Promise<{ success: boolean; error?: string }>;
-      agentStopStream: (args: { providerId: 'codex' | 'claude'; workspaceId: string }) => Promise<{
+      agentStopStream: (args: { providerId: 'codex' | 'claude' | string; workspaceId: string }) => Promise<{
         success: boolean;
         error?: string;
       }>;
@@ -407,6 +453,30 @@ declare global {
       ) => () => void;
       onCodexStreamComplete: (
         listener: (data: { workspaceId: string; exitCode: number; agentId: string }) => void
+      ) => () => void;
+
+      // Agent stream event listeners (multi-provider)
+      onAgentStreamOutput: (
+        listener: (data: {
+          providerId: 'codex' | 'claude' | string;
+          workspaceId: string;
+          output: string;
+          conversationId?: string;
+        }) => void
+      ) => () => void;
+      onAgentStreamError: (
+        listener: (data: {
+          providerId: 'codex' | 'claude' | string;
+          workspaceId: string;
+          error: string;
+        }) => void
+      ) => () => void;
+      onAgentStreamComplete: (
+        listener: (data: {
+          providerId: 'codex' | 'claude' | string;
+          workspaceId: string;
+          exitCode: number;
+        }) => void
       ) => () => void;
     };
   }

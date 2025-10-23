@@ -8,6 +8,7 @@ type Props = {
   cols?: number;
   rows?: number;
   shell?: string;
+  env?: Record<string, string>; // Custom environment variables
   className?: string;
   variant?: 'dark' | 'light';
   themeOverride?: any; // optional xterm theme overrides
@@ -24,6 +25,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
   cols = 80,
   rows = 24,
   shell,
+  env,
   className,
   variant = 'dark',
   themeOverride,
@@ -78,11 +80,11 @@ const TerminalPaneComponent: React.FC<Props> = ({
         }
       : {
           // Dark theme defaults
-          background: '#1f2937',
+          background: '#000000',
           foreground: '#ffffff',
           cursor: '#ffffff',
           selectionBackground: '#ffffff33',
-          black: '#1f2937',
+          black: '#000000',
           red: '#ff6b6b',
           green: '#2ecc71',
           yellow: '#f1c40f',
@@ -190,6 +192,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
           cols,
           rows,
           shell,
+          env,
         });
         if (!res?.ok) {
           term.writeln('\x1b[31mFailed to start PTY:\x1b[0m ' + (res as any)?.error);
@@ -218,7 +221,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
       term.dispose();
       termRef.current = null;
     };
-  }, [id, cwd, cols, rows, variant, keepAlive, shell]);
+  }, [id, cwd, cols, rows, variant, keepAlive, shell, env]);
 
   return (
     <div

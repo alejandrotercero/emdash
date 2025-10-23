@@ -106,7 +106,7 @@ const MessageList: React.FC<MessageListProps> = ({
             >
               <div
                 className={`max-w-[80%] px-4 py-3 font-sans text-sm leading-relaxed text-gray-900 dark:text-gray-100 ${
-                  isUserMessage ? 'rounded-md bg-gray-100 dark:bg-gray-700' : ''
+                  isUserMessage ? 'rounded-md bg-gray-100 dark:bg-neutral-800' : ''
                 }`}
               >
                 {isUserMessage ? (
@@ -116,14 +116,14 @@ const MessageList: React.FC<MessageListProps> = ({
                         code: ({ inline, className, children, ...props }: any) => {
                           const match = /language-(\w+)/.exec(className || '');
                           return !inline && match ? (
-                            <pre className="overflow-x-auto rounded-md bg-gray-100 p-3 dark:bg-gray-800">
+                            <pre className="overflow-x-auto rounded-md bg-gray-100 p-3 dark:bg-neutral-900">
                               <code className={className} {...props}>
                                 {children}
                               </code>
                             </pre>
                           ) : (
                             <code
-                              className="rounded bg-gray-100 px-1 py-0.5 text-sm dark:bg-gray-800"
+                              className="rounded bg-gray-100 px-1 py-0.5 text-sm dark:bg-neutral-900"
                               {...props}
                             >
                               {children}

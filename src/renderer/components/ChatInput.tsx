@@ -189,13 +189,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const linkButtonRef = useRef<HTMLButtonElement>(null);
 
   const getPlaceholder = () => {
+    // Check if provider is a custom Claude config
+    const isCustomClaude = provider?.startsWith('custom-claude-');
+
     if (provider === 'codex' && !isCodexInstalled) {
       return 'Codex CLI not installed...';
     }
-    if (!agentCreated) {
+    // Only show "Initializing..." for Codex (custom Claude doesn't need agentCreated)
+    if (!agentCreated && (provider === 'codex' || provider === 'claude')) {
       return 'Initializing...';
     }
     if (provider === 'claude') return 'Tell Claude Code what to do...';
+    if (isCustomClaude) return 'Tell Claude what to do...';
     if (provider === 'droid') return 'Factory Droid uses the terminal above.';
     if (provider === 'gemini') return 'Gemini CLI uses the terminal above.';
     if (provider === 'cursor') return 'Cursor CLI runs in the terminal above.';
@@ -206,13 +211,19 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   const trimmedValue = value.trim();
+
+  // Check if provider is a custom Claude config
+  const isCustomClaude = provider?.startsWith('custom-claude-');
+
   const baseDisabled =
     disabled ||
     (provider === 'codex'
       ? !isCodexInstalled || !agentCreated
       : provider === 'claude'
         ? !agentCreated
-        : true); // droid/gemini/cursor/copilot: input disabled, terminal-only
+        : isCustomClaude
+          ? false // Custom Claude configs use stream directly, no agentCreated needed
+          : true); // droid/gemini/cursor/copilot: input disabled, terminal-only
 
   const textareaDisabled = baseDisabled || isLoading;
   const sendDisabled =
@@ -253,7 +264,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     <div className="px-6 pb-6 pt-4" onDrop={handleDrop} onDragOver={handleDragOver}>
       <div className="mx-auto max-w-4xl">
         <div
-          className={`relative rounded-md border border-gray-200 bg-white transition-shadow duration-200 dark:border-gray-700 dark:bg-gray-800 ${
+          className={`relative rounded-md border border-gray-200 bg-white transition-shadow duration-200 dark:border-neutral-700 dark:bg-neutral-900 ${
             isFocused ? 'shadow-2xl' : 'shadow-lg'
           }`}
         >
