@@ -98,6 +98,21 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
 }) => {
   const { open, isMobile, setOpen } = useSidebar();
 
+  // Calculate session-wide workspace indices for keyboard shortcuts
+  const getWorkspaceIndex = (workspaceId: string): number => {
+    let sessionIndex = 1;
+    for (const project of projects) {
+      for (const workspace of project.workspaces || []) {
+        if (workspace.id === workspaceId) {
+          return sessionIndex;
+        }
+        sessionIndex++;
+        if (sessionIndex > 9) return -1; // Only support up to 9 workspaces
+      }
+    }
+    return -1;
+  };
+
   const githubProfileUrl = React.useMemo(() => {
     if (!githubAuthenticated) {
       return null;
@@ -216,6 +231,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                               <div className="hidden min-w-0 space-y-1 sm:block">
                                 {typedProject.workspaces?.map((workspace) => {
                                   const isActive = activeWorkspace?.id === workspace.id;
+                                  const sessionIndex = getWorkspaceIndex(workspace.id);
                                   return (
                                     <div
                                       key={workspace.id}
@@ -236,6 +252,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                     >
                                       <WorkspaceItem
                                         workspace={workspace}
+                                        index={sessionIndex > 0 && sessionIndex <= 9 ? sessionIndex : undefined}
                                         onDelete={
                                           onDeleteWorkspace
                                             ? () => onDeleteWorkspace(typedProject, workspace)

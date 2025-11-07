@@ -11,6 +11,8 @@ import { ChangesBadge } from './WorkspaceChanges';
 import { Spinner } from './ui/spinner';
 import WorkspaceDeleteButton from './WorkspaceDeleteButton';
 import ProjectDeleteButton from './ProjectDeleteButton';
+import SimpleGitStatus from './SimpleGitStatus';
+import SimpleGitWorkspaceStatus from './SimpleGitWorkspaceStatus';
 
 interface Project {
   id: string;
@@ -35,6 +37,7 @@ interface Workspace {
   path: string;
   status: 'active' | 'idle' | 'running';
   agentId?: string;
+  worktreeType?: 'worktree' | 'main';
 }
 
 function StatusBadge({ status }: { status: Workspace['status'] }) {
@@ -47,11 +50,13 @@ function StatusBadge({ status }: { status: Workspace['status'] }) {
 
 function WorkspaceRow({
   ws,
+  project,
   active,
   onClick,
   onDelete,
 }: {
   ws: Workspace;
+  project: Project;
   active: boolean;
   onClick: () => void;
   onDelete: () => void | Promise<void>;
@@ -100,20 +105,36 @@ function WorkspaceRow({
       ].join(' ')}
     >
       <div className="min-w-0">
-        <div className="text-base font-medium leading-tight tracking-tight">{ws.name}</div>
+        <div className="flex items-center gap-2">
+          <div className="text-base font-medium leading-tight tracking-tight">{ws.name}</div>
+          {ws.worktreeType === 'main' && (
+            <Badge variant="outline" className="text-xs px-1.5 py-0.5 h-auto border-green-200 text-green-700 bg-green-50 dark:border-green-800 dark:text-green-300 dark:bg-green-900/20">
+              Main
+            </Badge>
+          )}
+        </div>
         <div className="mt-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
           {isRunning || ws.status === 'running' ? <Spinner size="sm" className="size-3" /> : null}
           <GitBranch className="size-3" />
           <span className="max-w-[24rem] truncate font-mono" title={`origin/${ws.branch}`}>
             origin/{ws.branch}
           </span>
+          {project.gitInfo.isGitRepo && (
+            <SimpleGitWorkspaceStatus
+              workspacePath={ws.path}
+              workspaceId={ws.id}
+              projectId={project.id}
+              branch={ws.branch}
+              compact={true}
+            />
+          )}
         </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
         {!isLoading && (totalAdditions > 0 || totalDeletions > 0) ? (
           <ChangesBadge additions={totalAdditions} deletions={totalDeletions} />
-        ) : pr ? (
+        ) : pr && ws.worktreeType !== 'main' ? (
           <span
             className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
             title={`${pr.title || 'Pull Request'} (#${pr.number})`}
@@ -122,22 +143,34 @@ function WorkspaceRow({
           </span>
         ) : null}
         {ws.agentId && <Badge variant="outline">agent</Badge>}
+        {project.gitInfo.isGitRepo && (
+          <SimpleGitWorkspaceStatus
+            workspacePath={ws.path}
+            workspaceId={ws.id}
+            projectId={project.id}
+            branch={ws.branch}
+            compact={false}
+          />
+        )}
 
-        <WorkspaceDeleteButton
-          workspaceName={ws.name}
-          onConfirm={async () => {
-            try {
-              setIsDeleting(true);
-              await onDelete();
-            } finally {
-              // If deletion succeeds, this row will unmount; if it fails, revert spinner
-              setIsDeleting(false);
-            }
-          }}
-          isDeleting={isDeleting}
-          aria-label={`Delete workspace ${ws.name}`}
-          className="inline-flex items-center justify-center rounded p-2 text-muted-foreground hover:bg-transparent hover:text-destructive focus-visible:ring-0"
-        />
+        {/* Only show delete button for worktree workspaces, not main branch workspaces */}
+        {ws.worktreeType !== 'main' && (
+          <WorkspaceDeleteButton
+            workspaceName={ws.name}
+            onConfirm={async () => {
+              try {
+                setIsDeleting(true);
+                await onDelete();
+              } finally {
+                // If deletion succeeds, this row will unmount; if it fails, revert spinner
+                setIsDeleting(false);
+              }
+            }}
+            isDeleting={isDeleting}
+            aria-label={`Delete workspace ${ws.name}`}
+            className="inline-flex items-center justify-center rounded p-2 text-muted-foreground hover:bg-transparent hover:text-destructive focus-visible:ring-0"
+          />
+        )}
       </div>
     </div>
   );
@@ -173,23 +206,33 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
               <div className="space-y-2">
                 <h1 className="text-3xl font-semibold tracking-tight">{project.name}</h1>
 
-                <Breadcrumb className="text-muted-foreground">
-                  <BreadcrumbList>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink className="text-muted-foreground">
-                        {project.path}
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    {project.gitInfo.branch && (
+                <div className="flex items-center justify-between gap-4">
+                  <Breadcrumb className="text-muted-foreground">
+                    <BreadcrumbList>
                       <BreadcrumbItem>
-                        <Badge variant="secondary" className="gap-1">
-                          <GitBranch className="size-3" />
-                          origin/{project.gitInfo.branch}
-                        </Badge>
+                        <BreadcrumbLink className="text-muted-foreground">
+                          {project.path}
+                        </BreadcrumbLink>
                       </BreadcrumbItem>
-                    )}
-                  </BreadcrumbList>
-                </Breadcrumb>
+                      {project.gitInfo.branch && (
+                        <BreadcrumbItem>
+                          <Badge variant="secondary" className="gap-1">
+                            <GitBranch className="size-3" />
+                            origin/{project.gitInfo.branch}
+                          </Badge>
+                        </BreadcrumbItem>
+                      )}
+                    </BreadcrumbList>
+                  </Breadcrumb>
+
+                  {project.gitInfo.isGitRepo && (
+                    <SimpleGitStatus
+                      projectPath={project.path}
+                      projectId={project.id}
+                      currentBranch={project.gitInfo.branch}
+                    />
+                  )}
+                </div>
               </div>
               {onDeleteProject ? (
                 <ProjectDeleteButton
@@ -231,6 +274,7 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
                   <WorkspaceRow
                     key={ws.id}
                     ws={ws}
+                    project={project}
                     active={activeWorkspace?.id === ws.id}
                     onClick={() => onSelectWorkspace(ws)}
                     onDelete={() => onDeleteWorkspace(project, ws)}

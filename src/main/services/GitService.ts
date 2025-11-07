@@ -13,6 +13,21 @@ export type GitChange = {
   isStaged: boolean;
 };
 
+export type GitCommit = {
+  hash: string;
+  author: string;
+  date: string;
+  message: string;
+};
+
+export type GitRemoteStatus = {
+  ahead: number;
+  behind: number;
+  hasNewCommits: boolean;
+  currentBranch: string;
+  remoteBranch: string;
+};
+
 export async function getStatus(workspacePath: string): Promise<GitChange[]> {
   // Return empty if not a git repo
   try {
@@ -237,5 +252,134 @@ export async function getFileDiff(
         return { lines: [] };
       }
     }
+  }
+}
+
+// New functions for git pull and remote status
+
+export async function fetchFromRemote(workspacePath: string): Promise<void> {
+  try {
+    await execFileAsync('git', ['fetch', 'origin'], { cwd: workspacePath });
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
+      throw new Error('Git is not installed or not found in PATH. Please install Git and restart the application.');
+    }
+    throw error;
+  }
+}
+
+export async function pullFromRemote(workspacePath: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const { stdout, stderr } = await execFileAsync('git', ['pull', 'origin'], { cwd: workspacePath });
+    return {
+      success: true,
+      message: `Pull successful: ${stdout || stderr}`
+    };
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
+      return {
+        success: false,
+        message: 'Git is not installed or not found in PATH. Please install Git and restart the application.'
+      };
+    }
+    return {
+      success: false,
+      message: `Pull failed: ${error.message}`
+    };
+  }
+}
+
+export async function getCurrentBranch(workspacePath: string): Promise<string> {
+  try {
+    const { stdout } = await execFileAsync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+      cwd: workspacePath
+    });
+    return stdout.trim();
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
+      return 'Git not installed';
+    }
+    return 'unknown';
+  }
+}
+
+export async function getRemoteStatus(workspacePath: string): Promise<GitRemoteStatus | null> {
+  try {
+    // First fetch to get latest remote info
+    await fetchFromRemote(workspacePath);
+
+    const currentBranch = await getCurrentBranch(workspacePath);
+
+    // If git is not installed, return null
+    if (currentBranch === 'Git not installed') {
+      return null;
+    }
+
+    // Get ahead/behind info
+    const { stdout } = await execFileAsync('git', ['rev-list', '--count', '--left-right',
+      `${currentBranch}...origin/${currentBranch}`], { cwd: workspacePath });
+
+    const [behind, ahead] = stdout.trim().split('\t').map(Number);
+
+    // Get tracking branch
+    let remoteBranch = `origin/${currentBranch}`;
+    try {
+      const { stdout: trackingBranch } = await execFileAsync('git', ['rev-parse', '--abbrev-ref',
+        `${currentBranch}@{u}`], { cwd: workspacePath });
+      remoteBranch = trackingBranch.trim();
+    } catch {
+      // Branch might not have tracking configured
+    }
+
+    return {
+      ahead: ahead || 0,
+      behind: behind || 0,
+      hasNewCommits: (behind || 0) > 0,
+      currentBranch,
+      remoteBranch
+    };
+  } catch (error: any) {
+    console.error('Failed to get remote status:', error);
+    if (error.code === 'ENOENT') {
+      console.error('Git is not installed or not found in PATH');
+    }
+    return null;
+  }
+}
+
+export async function getCommitHistory(workspacePath: string, limit: number = 10): Promise<GitCommit[]> {
+  try {
+    const { stdout } = await execFileAsync('git', ['log',
+      `--pretty=format:%H|%an|%ad|%s`,
+      '--date=short',
+      `-${limit}`
+    ], { cwd: workspacePath });
+
+    const commits: GitCommit[] = [];
+    const lines = stdout.trim().split('\n');
+
+    for (const line of lines) {
+      const [hash, author, date, ...messageParts] = line.split('|');
+      commits.push({
+        hash: hash.substring(0, 8), // Short hash
+        author,
+        date,
+        message: messageParts.join('|')
+      });
+    }
+
+    return commits;
+  } catch (error) {
+    console.error('Failed to get commit history:', error);
+    return [];
+  }
+}
+
+export async function hasUncommittedChanges(workspacePath: string): Promise<boolean> {
+  try {
+    const changes = await getStatus(workspacePath);
+    return changes.length > 0;
+  } catch {
+    return false;
   }
 }

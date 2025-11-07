@@ -12,15 +12,13 @@ import { registerGitIpc } from './gitIpc';
 import { registerAgentIpc } from './agentIpc';
 import { registerLinearIpc } from './linearIpc';
 import { registerConnectionsIpc } from './connectionsIpc';
-import { registerUpdateIpc } from '../services/updateIpc';
-import { registerTelemetryIpc } from './telemetryIpc';
+import { registerSetupCommandsIpc } from './setupCommandsIpc';
+import { registerWorkspaceAgentIpc } from './workspaceAgentIpc';
 
 export function registerAllIpc() {
   // Core app/utility IPC
   registerAppIpc();
   registerDebugIpc();
-  registerTelemetryIpc();
-  registerUpdateIpc();
 
   // Domain IPC
   registerProjectIpc();
@@ -36,6 +34,8 @@ export function registerAllIpc() {
   registerAgentIpc();
   registerLinearIpc();
   registerConnectionsIpc();
+  registerSetupCommandsIpc();
+  registerWorkspaceAgentIpc();
 
   // console.log('✅ All IPC handlers registered');
 }

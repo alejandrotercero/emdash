@@ -2,6 +2,9 @@ import { useEffect } from 'react';
 import { useToast } from './use-toast';
 import { ToastAction } from '@/components/ui/toast';
 
+// Update notifier disabled - telemetry and auto-update systems removed
+const UPDATES_DISABLED = true;
+
 type Options = {
   checkOnMount?: boolean;
   onOpenSettings?: () => void;
@@ -15,7 +18,7 @@ export function useUpdateNotifier(opts: Options = {}) {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || UPDATES_DISABLED) return;
 
     const shouldNotify = (availableVersion?: string) => {
       try {

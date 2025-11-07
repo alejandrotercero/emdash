@@ -16,6 +16,7 @@ export interface WorktreeInfo {
   status: 'active' | 'paused' | 'completed' | 'error';
   createdAt: string;
   lastActivity?: string;
+  worktreeType: 'worktree' | 'main';
 }
 
 export class WorktreeService {
@@ -99,6 +100,7 @@ export class WorktreeService {
         projectId,
         status: 'active',
         createdAt: new Date().toISOString(),
+        worktreeType: 'worktree'
       };
 
       this.worktrees.set(worktreeInfo.id, worktreeInfo);
@@ -120,6 +122,63 @@ export class WorktreeService {
     } catch (error) {
       log.error('Failed to create worktree:', error);
       throw new Error(`Failed to create worktree: ${error}`);
+    }
+  }
+
+  /**
+   * Create a workspace that works directly on the main branch (no worktree)
+   */
+  async createMainBranchWorkspace(
+    projectPath: string,
+    workspaceName: string,
+    projectId: string
+  ): Promise<WorktreeInfo> {
+    try {
+      // Get current branch name
+      const { stdout: currentBranchOutput } = await execFileAsync('git', ['branch', '--show-current'], {
+        cwd: projectPath
+      });
+      const currentBranch = currentBranchOutput.trim();
+
+      // Create a unique ID for this workspace
+      const workspaceId = `main-${this.slugify(workspaceName)}-${Date.now()}`;
+      const worktreeId = this.stableIdFromPath(projectPath);
+
+      log.info(`Creating main branch workspace: ${workspaceName} on branch ${currentBranch}`);
+
+      // Ensure we're on the main branch or current branch
+      try {
+        const defaultBranch = await this.getDefaultBranch(projectPath);
+        if (currentBranch !== defaultBranch) {
+          log.info(`Switching to default branch: ${defaultBranch}`);
+          await execFileAsync('git', ['checkout', defaultBranch], { cwd: projectPath });
+        }
+      } catch (branchError) {
+        log.warn('Failed to switch to default branch, using current branch:', branchError);
+      }
+
+      // Ensure codex logs are ignored
+      this.ensureCodexLogIgnored(projectPath);
+
+      const worktreeInfo: WorktreeInfo = {
+        id: worktreeId,
+        name: workspaceName,
+        branch: currentBranch,
+        path: projectPath,
+        projectId,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        worktreeType: 'main'
+      };
+
+      this.worktrees.set(worktreeInfo.id, worktreeInfo);
+
+      log.info(`Created main branch workspace: ${workspaceName} -> ${currentBranch}`);
+
+      return worktreeInfo;
+    } catch (error) {
+      log.error('Failed to create main branch workspace:', error);
+      throw new Error(`Failed to create main branch workspace: ${error}`);
     }
   }
 
@@ -165,6 +224,7 @@ export class WorktreeService {
               projectId: path.basename(projectPath),
               status: 'active',
               createdAt: new Date().toISOString(),
+              worktreeType: 'worktree'
             }
           );
         }
@@ -420,6 +480,7 @@ export class WorktreeService {
       projectId,
       status: 'active',
       createdAt: new Date().toISOString(),
+      worktreeType: 'worktree'
     };
 
     this.worktrees.set(worktreeInfo.id, worktreeInfo);

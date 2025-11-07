@@ -16,8 +16,10 @@ import {
   Command as CommandIcon,
   Option,
   Palette,
+  Bot,
 } from 'lucide-react';
-import { APP_SHORTCUTS } from '../hooks/useKeyboardShortcuts';
+import { APP_SHORTCUTS, AGENT_MAPPING } from '../hooks/useKeyboardShortcuts';
+import type { Provider } from '../types';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -40,6 +42,7 @@ interface CommandPaletteProps {
   onToggleTheme?: () => void;
   onGoHome?: () => void;
   onOpenProject?: () => void;
+  onSwitchAgent?: (provider: string) => void;
 }
 
 type CommandItem = {
@@ -51,7 +54,7 @@ type CommandItem = {
   keywords?: string[];
   shortcut?: {
     key: string;
-    modifier?: 'cmd' | 'option';
+    modifier?: 'cmd' | 'option' | 'cmd+shift';
   };
   onSelect: () => void;
 };
@@ -68,6 +71,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
   onToggleTheme,
   onGoHome,
   onOpenProject,
+  onSwitchAgent,
 }) => {
   const [search, setSearch] = useState('');
   const shouldReduceMotion = useReducedMotion();
@@ -175,6 +179,40 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
           modifier: APP_SHORTCUTS.TOGGLE_THEME.modifier,
         },
         onSelect: () => runCommand(onToggleTheme),
+      });
+    }
+
+    // Agent switching commands
+    if (onSwitchAgent) {
+      const agentNames: Record<Provider, string> = {
+        codex: 'OpenAI Codex',
+        claude: 'Claude Code',
+        qwen: 'Qwen Code',
+        droid: 'Droid',
+        gemini: 'Gemini',
+        cursor: 'Cursor',
+        copilot: 'GitHub Copilot',
+        amp: 'Amp',
+        opencode: 'OpenCode',
+        charm: 'Charm',
+        auggie: 'Auggie',
+      };
+
+      Object.entries(AGENT_MAPPING).forEach(([index, provider]) => {
+        const agentName = agentNames[provider];
+        items.push({
+          id: `agent-${provider}`,
+          label: `Switch to ${agentName}`,
+          description: `Switch AI provider to ${agentName}`,
+          group: 'Agent Switching',
+          keywords: ['agent', 'ai', 'provider', 'switch', agentName.toLowerCase()],
+          shortcut: {
+            key: index,
+            modifier: 'cmd+shift',
+          },
+          icon: <Bot className="h-4 w-4" />,
+          onSelect: () => runCommand(() => onSwitchAgent(provider)),
+        });
       });
     }
 
@@ -316,6 +354,12 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                             <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
                               {item.shortcut.modifier === 'cmd' && (
                                 <CommandIcon className="h-3 w-3" />
+                              )}
+                              {item.shortcut.modifier === 'cmd+shift' && (
+                                <>
+                                  <CommandIcon className="h-3 w-3" />
+                                  <ArrowUp className="h-3 w-3" />
+                                </>
                               )}
                               {item.shortcut.modifier === 'option' && (
                                 <Option className="h-3 w-3" />

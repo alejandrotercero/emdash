@@ -11,6 +11,10 @@ export interface RightSidebarWorkspace {
   path: string;
   status: 'active' | 'idle' | 'running';
   agentId?: string;
+  projectId?: string;
+  projectGitInfo?: {
+    isGitRepo: boolean;
+  };
 }
 
 interface RightSidebarProps extends React.HTMLAttributes<HTMLElement> {

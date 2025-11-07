@@ -7,7 +7,14 @@ import {
   getFileDiff as gitGetFileDiff,
   stageFile as gitStageFile,
   revertFile as gitRevertFile,
+  getRemoteStatus as gitGetRemoteStatus,
+  getCommitHistory as gitGetCommitHistory,
+  getCurrentBranch as gitGetCurrentBranch,
+  pullFromRemote as gitPullFromRemote,
+  fetchFromRemote as gitFetchFromRemote,
+  hasUncommittedChanges as gitHasUncommittedChanges,
 } from '../services/GitService';
+import { gitPollingService } from '../services/GitPollingService';
 
 const execAsync = promisify(exec);
 
@@ -465,5 +472,226 @@ current branch '${currentBranch}' ahead of base '${baseRef}'.`,
       log.error('Failed to get branch status:', error);
       return { success: false, error: error as string };
     }
+  });
+
+  // Git: Get remote status (ahead/behind, new commits)
+  ipcMain.handle('git:get-remote-status', async (_, args: { workspacePath: string }) => {
+    try {
+      const status = await gitGetRemoteStatus(args.workspacePath);
+      return { success: true, status };
+    } catch (error) {
+      log.error('Failed to get remote status:', error);
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // Git: Pull from remote
+  ipcMain.handle('git:pull', async (_, args: { workspacePath: string }) => {
+    try {
+      log.info('Starting git pull for:', { workspacePath: args.workspacePath });
+      const result = await gitPullFromRemote(args.workspacePath);
+      if (result.success) {
+        log.info('Git pull successful:', { workspacePath: args.workspacePath, message: result.message });
+      } else {
+        log.error('Git pull failed:', { workspacePath: args.workspacePath, message: result.message });
+      }
+      return result;
+    } catch (error) {
+      log.error('Failed to pull from remote:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : String(error)
+      };
+    }
+  });
+
+  // Git: Fetch from remote (without merging)
+  ipcMain.handle('git:fetch', async (_, args: { workspacePath: string }) => {
+    try {
+      log.info('Starting git fetch for:', { workspacePath: args.workspacePath });
+      await gitFetchFromRemote(args.workspacePath);
+
+      // After fetch, get status to check for behind commits
+      const { exec } = require('child_process');
+      const { promisify } = require('util');
+      const execAsync = promisify(exec);
+
+      const { stdout, stderr } = await execAsync('git status', { cwd: args.workspacePath });
+      const output = stdout + stderr;
+
+      log.info('Git fetch and status successful:', { workspacePath: args.workspacePath });
+      return {
+        success: true,
+        output: output,
+        message: 'Fetch completed successfully'
+      };
+    } catch (error) {
+      log.error('Failed to fetch from remote:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : String(error)
+      };
+    }
+  });
+
+  // Git: Get commit history
+  ipcMain.handle('git:get-commit-history', async (_, args: { workspacePath: string; limit?: number }) => {
+    try {
+      const commits = await gitGetCommitHistory(args.workspacePath, args.limit);
+      return { success: true, commits };
+    } catch (error) {
+      log.error('Failed to get commit history:', error);
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // Git: Check if has uncommitted changes
+  ipcMain.handle('git:has-uncommitted-changes', async (_, args: { workspacePath: string }) => {
+    try {
+      const hasChanges = await gitHasUncommittedChanges(args.workspacePath);
+      return { success: true, hasChanges };
+    } catch (error) {
+      log.error('Failed to check uncommitted changes:', error);
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // Git Polling: Add project to monitoring
+  ipcMain.handle('git-polling:add-project', async (_, args: {
+    projectId: string;
+    projectPath: string;
+    config?: { enabled?: boolean; intervalMinutes?: number; autoFetch?: boolean }
+  }) => {
+    try {
+      gitPollingService.addProject(args.projectId, args.projectPath, args.config);
+      log.info('Added project to git polling:', { projectId: args.projectId, projectPath: args.projectPath });
+      return { success: true };
+    } catch (error) {
+      log.error('Failed to add project to git polling:', error);
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // Git Polling: Remove project from monitoring
+  ipcMain.handle('git-polling:remove-project', async (_, args: { projectId: string }) => {
+    try {
+      gitPollingService.removeProject(args.projectId);
+      log.info('Removed project from git polling:', { projectId: args.projectId });
+      return { success: true };
+    } catch (error) {
+      log.error('Failed to remove project from git polling:', error);
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // Git Polling: Update project configuration
+  ipcMain.handle('git-polling:update-config', async (_, args: {
+    projectId: string;
+    config: { enabled?: boolean; intervalMinutes?: number; autoFetch?: boolean }
+  }) => {
+    try {
+      gitPollingService.updateProjectConfig(args.projectId, args.config);
+      log.info('Updated git polling config:', { projectId: args.projectId, config: args.config });
+      return { success: true };
+    } catch (error) {
+      log.error('Failed to update git polling config:', error);
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // Git Polling: Manual check for updates
+  ipcMain.handle('git-polling:check-updates', async (_, args: { projectId: string }) => {
+    try {
+      const event = await gitPollingService.checkForUpdates(args.projectId);
+      return { success: true, event };
+    } catch (error) {
+      log.error('Failed to check git updates:', error);
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // Git Polling: Pull updates for a project
+  ipcMain.handle('git-polling:pull-updates', async (_, args: { projectId: string }) => {
+    try {
+      const result = await gitPollingService.pullUpdates(args.projectId);
+      return { success: true, result };
+    } catch (error) {
+      log.error('Failed to pull updates via polling service:', error);
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // Git Polling: Get all monitored projects
+  ipcMain.handle('git-polling:get-projects', async () => {
+    try {
+      const projects = gitPollingService.getMonitoredProjects();
+      return { success: true, projects };
+    } catch (error) {
+      log.error('Failed to get monitored projects:', error);
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // Git Polling: Get all statuses
+  ipcMain.handle('git-polling:get-all-statuses', async () => {
+    try {
+      const statuses = await gitPollingService.getAllStatuses();
+      return { success: true, statuses };
+    } catch (error) {
+      log.error('Failed to get all git statuses:', error);
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // Git Polling: Enable/disable all polling
+  ipcMain.handle('git-polling:set-global-enabled', async (_, args: { enabled: boolean }) => {
+    try {
+      gitPollingService.setGlobalEnabled(args.enabled);
+      log.info('Set global git polling enabled:', args.enabled);
+      return { success: true };
+    } catch (error) {
+      log.error('Failed to set global git polling enabled:', error);
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // Git Polling: Get default config
+  ipcMain.handle('git-polling:get-default-config', async () => {
+    try {
+      const config = gitPollingService.getDefaultConfig();
+      return { success: true, config };
+    } catch (error) {
+      log.error('Failed to get default git polling config:', error);
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // Set up event forwarding for git polling events
+  gitPollingService.on('git-update', (event) => {
+    // Send to all renderer processes
+    const { BrowserWindow } = require('electron');
+    BrowserWindow.getAllWindows().forEach((window: any) => {
+      if (!window.isDestroyed()) {
+        window.webContents.send('git-polling:update', event);
+      }
+    });
+  });
+
+  gitPollingService.on('git-error', (event) => {
+    const { BrowserWindow } = require('electron');
+    BrowserWindow.getAllWindows().forEach((window: any) => {
+      if (!window.isDestroyed()) {
+        window.webContents.send('git-polling:error', event);
+      }
+    });
+  });
+
+  gitPollingService.on('git-pull', (event) => {
+    const { BrowserWindow } = require('electron');
+    BrowserWindow.getAllWindows().forEach((window: any) => {
+      if (!window.isDestroyed()) {
+        window.webContents.send('git-polling:pull', event);
+      }
+    });
   });
 }

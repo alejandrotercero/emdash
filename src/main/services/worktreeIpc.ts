@@ -117,4 +117,29 @@ export function registerWorktreeIpc(): void {
       return { success: false, error: (error as Error).message };
     }
   });
+
+  // Create a main branch workspace (no worktree)
+  ipcMain.handle(
+    'worktree:createMainBranch',
+    async (
+      event,
+      args: {
+        projectPath: string;
+        workspaceName: string;
+        projectId: string;
+      }
+    ) => {
+      try {
+        const worktree = await worktreeService.createMainBranchWorkspace(
+          args.projectPath,
+          args.workspaceName,
+          args.projectId
+        );
+        return { success: true, worktree };
+      } catch (error) {
+        console.error('Failed to create main branch workspace:', error);
+        return { success: false, error: (error as Error).message };
+      }
+    }
+  );
 }

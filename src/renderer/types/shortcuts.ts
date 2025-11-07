@@ -2,7 +2,7 @@
  * Keyboard shortcuts types
  */
 
-export type ShortcutModifier = 'cmd' | 'ctrl' | 'shift' | 'alt' | 'option';
+export type ShortcutModifier = 'cmd' | 'ctrl' | 'shift' | 'alt' | 'option' | 'cmd+shift';
 
 export interface ShortcutConfig {
   key: string;
@@ -46,6 +46,12 @@ export interface GlobalShortcutHandlers {
 
   // Theme
   onToggleTheme?: () => void;
+
+  // Workspace Switching
+  onSwitchWorkspace?: (workspaceIndex: number) => void;
+
+  // Agent Switching (Cmd+1, Cmd+2, etc.)
+  onSwitchAgent?: (agentIndex: number) => void;
 
   // State checks
   isCommandPaletteOpen?: boolean;

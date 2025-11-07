@@ -27,6 +27,7 @@ import type { ImperativePanelHandle } from 'react-resizable-panels';
 import SettingsModal from './components/SettingsModal';
 import CommandPalette from './components/CommandPalette';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useAgentSwitching } from './hooks/useAgentSwitching';
 
 interface AppKeyboardShortcutsProps {
   showCommandPalette: boolean;
@@ -35,6 +36,8 @@ interface AppKeyboardShortcutsProps {
   handleOpenSettings: () => void;
   handleCloseCommandPalette: () => void;
   handleCloseSettings: () => void;
+  activeWorkspaceId?: string | null;
+  onSwitchWorkspace?: (workspaceIndex: number) => void;
 }
 
 const AppKeyboardShortcuts: React.FC<AppKeyboardShortcutsProps> = ({
@@ -44,10 +47,13 @@ const AppKeyboardShortcuts: React.FC<AppKeyboardShortcutsProps> = ({
   handleOpenSettings,
   handleCloseCommandPalette,
   handleCloseSettings,
+  activeWorkspaceId,
+  onSwitchWorkspace,
 }) => {
   const { toggle: toggleLeftSidebar } = useSidebar();
   const { toggle: toggleRightSidebar } = useRightSidebar();
   const { toggleTheme } = useTheme();
+  const { switchAgentByIndex } = useAgentSwitching(activeWorkspaceId || undefined);
 
   // Single global keyboard shortcuts handler
   useKeyboardShortcuts({
@@ -56,6 +62,8 @@ const AppKeyboardShortcuts: React.FC<AppKeyboardShortcutsProps> = ({
     onToggleLeftSidebar: toggleLeftSidebar,
     onToggleRightSidebar: toggleRightSidebar,
     onToggleTheme: toggleTheme,
+    onSwitchWorkspace: onSwitchWorkspace,
+    onSwitchAgent: activeWorkspaceId ? switchAgentByIndex : undefined,
     onCloseModal: showCommandPalette
       ? handleCloseCommandPalette
       : showSettings
@@ -77,6 +85,7 @@ interface CommandPaletteWrapperProps {
   handleGoHome: () => void;
   handleOpenProject: () => void;
   handleOpenSettings: () => void;
+  activeWorkspaceId?: string | null;
 }
 
 const CommandPaletteWrapper: React.FC<CommandPaletteWrapperProps> = ({
@@ -88,10 +97,16 @@ const CommandPaletteWrapper: React.FC<CommandPaletteWrapperProps> = ({
   handleGoHome,
   handleOpenProject,
   handleOpenSettings,
+  activeWorkspaceId,
 }) => {
   const { toggle: toggleLeftSidebar } = useSidebar();
   const { toggle: toggleRightSidebar } = useRightSidebar();
   const { toggleTheme } = useTheme();
+  const { switchAgent } = useAgentSwitching(activeWorkspaceId || undefined);
+
+  const handleSwitchAgent = useCallback(async (provider: string) => {
+    await switchAgent(provider as Provider);
+  }, [switchAgent]);
 
   return (
     <CommandPalette
@@ -116,6 +131,7 @@ const CommandPaletteWrapper: React.FC<CommandPaletteWrapperProps> = ({
       onToggleTheme={toggleTheme}
       onGoHome={handleGoHome}
       onOpenProject={handleOpenProject}
+      onSwitchAgent={activeWorkspaceId ? handleSwitchAgent : undefined}
     />
   );
 };
@@ -603,7 +619,8 @@ const AppContent: React.FC = () => {
     workspaceName: string,
     initialPrompt?: string,
     selectedProvider?: Provider,
-    linkedLinearIssue: LinearIssueSummary | null = null
+    linkedLinearIssue: LinearIssueSummary | null = null,
+    worktreeType: 'worktree' | 'main' = 'worktree'
   ) => {
     if (!selectedProject) return;
 
@@ -670,15 +687,24 @@ const AppContent: React.FC = () => {
           ? { linearIssue: linkedLinearIssue ?? null, initialPrompt: preparedPrompt ?? null }
           : null;
 
-      // Create Git worktree
-      const worktreeResult = await window.electronAPI.worktreeCreate({
-        projectPath: selectedProject.path,
-        workspaceName,
-        projectId: selectedProject.id,
-      });
+      // Create Git worktree or main branch workspace
+      let worktreeResult;
+      if (worktreeType === 'main') {
+        worktreeResult = await window.electronAPI.worktreeCreateMainBranch?.({
+          projectPath: selectedProject.path,
+          workspaceName,
+          projectId: selectedProject.id,
+        });
+      } else {
+        worktreeResult = await window.electronAPI.worktreeCreate({
+          projectPath: selectedProject.path,
+          workspaceName,
+          projectId: selectedProject.id,
+        });
+      }
 
-      if (!worktreeResult.success) {
-        throw new Error(worktreeResult.error || 'Failed to create worktree');
+      if (!worktreeResult?.success) {
+        throw new Error(worktreeResult?.error || 'Failed to create workspace');
       }
 
       const worktree = worktreeResult.worktree;
@@ -820,6 +846,22 @@ const AppContent: React.FC = () => {
   const handleSelectWorkspace = (workspace: Workspace) => {
     setActiveWorkspace(workspace);
     setActiveWorkspaceProvider(null); // Clear provider when switching workspaces
+  };
+
+  const handleSwitchWorkspaceByIndex = (workspaceIndex: number) => {
+    let currentIndex = 1;
+    for (const project of projects) {
+      for (const workspace of project.workspaces || []) {
+        if (currentIndex === workspaceIndex) {
+          // Select the project first, then the workspace
+          handleSelectProject(project);
+          handleSelectWorkspace(workspace);
+          return;
+        }
+        currentIndex++;
+        if (currentIndex > 9) return; // Only support up to 9 workspaces
+      }
+    }
   };
 
   const handleStartCreateWorkspaceFromSidebar = useCallback(
@@ -1111,6 +1153,8 @@ const AppContent: React.FC = () => {
             handleOpenSettings={handleOpenSettings}
             handleCloseCommandPalette={handleCloseCommandPalette}
             handleCloseSettings={handleCloseSettings}
+            activeWorkspaceId={activeWorkspace?.id || null}
+            onSwitchWorkspace={handleSwitchWorkspaceByIndex}
           />
           <RightSidebarBridge
             onCollapsedChange={handleRightSidebarCollapsedChange}
@@ -1197,13 +1241,16 @@ const AppContent: React.FC = () => {
             handleGoHome={handleGoHome}
             handleOpenProject={handleOpenProject}
             handleOpenSettings={handleOpenSettings}
+            activeWorkspaceId={activeWorkspace?.id || null}
           />
           <WorkspaceModal
             isOpen={showWorkspaceModal}
             onClose={() => setShowWorkspaceModal(false)}
             onCreateWorkspace={handleCreateWorkspace}
             projectName={selectedProject?.name || ''}
+            projectPath={selectedProject?.path || ''}
             defaultBranch={selectedProject?.gitInfo.branch || 'main'}
+            projectId={selectedProject?.id || ''}
             existingNames={(selectedProject?.workspaces || []).map((w) => w.name)}
           />
           <Toaster />

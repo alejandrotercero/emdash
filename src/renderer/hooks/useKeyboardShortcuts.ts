@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { ShortcutConfig, GlobalShortcutHandlers, ShortcutMapping } from '../types/shortcuts';
+import type { Provider } from '../types';
 
 /**
  * ==============================================================================
@@ -53,6 +54,134 @@ export const APP_SHORTCUTS = {
     description: 'Close modal/dialog',
     category: 'Navigation',
   },
+
+  // Workspace Switching (Cmd+1 through Cmd+9)
+  SWITCH_WORKSPACE_1: {
+    key: '1',
+    modifier: 'cmd' as const,
+    description: 'Switch to workspace 1',
+    category: 'Workspace',
+  },
+  SWITCH_WORKSPACE_2: {
+    key: '2',
+    modifier: 'cmd' as const,
+    description: 'Switch to workspace 2',
+    category: 'Workspace',
+  },
+  SWITCH_WORKSPACE_3: {
+    key: '3',
+    modifier: 'cmd' as const,
+    description: 'Switch to workspace 3',
+    category: 'Workspace',
+  },
+  SWITCH_WORKSPACE_4: {
+    key: '4',
+    modifier: 'cmd' as const,
+    description: 'Switch to workspace 4',
+    category: 'Workspace',
+  },
+  SWITCH_WORKSPACE_5: {
+    key: '5',
+    modifier: 'cmd' as const,
+    description: 'Switch to workspace 5',
+    category: 'Workspace',
+  },
+  SWITCH_WORKSPACE_6: {
+    key: '6',
+    modifier: 'cmd' as const,
+    description: 'Switch to workspace 6',
+    category: 'Workspace',
+  },
+  SWITCH_WORKSPACE_7: {
+    key: '7',
+    modifier: 'cmd' as const,
+    description: 'Switch to workspace 7',
+    category: 'Workspace',
+  },
+  SWITCH_WORKSPACE_8: {
+    key: '8',
+    modifier: 'cmd' as const,
+    description: 'Switch to workspace 8',
+    category: 'Workspace',
+  },
+  SWITCH_WORKSPACE_9: {
+    key: '9',
+    modifier: 'cmd' as const,
+    description: 'Switch to workspace 9',
+    category: 'Workspace',
+  },
+
+  // Agent Switching (Cmd+Shift+1 through Cmd+Shift+9)
+  SWITCH_AGENT_1: {
+    key: '1',
+    modifier: 'cmd+shift' as const,
+    description: 'Switch to agent 1 (Codex)',
+    category: 'Agent',
+  },
+  SWITCH_AGENT_2: {
+    key: '2',
+    modifier: 'cmd+shift' as const,
+    description: 'Switch to agent 2 (Claude)',
+    category: 'Agent',
+  },
+  SWITCH_AGENT_3: {
+    key: '3',
+    modifier: 'cmd+shift' as const,
+    description: 'Switch to agent 3 (Qwen)',
+    category: 'Agent',
+  },
+  SWITCH_AGENT_4: {
+    key: '4',
+    modifier: 'cmd+shift' as const,
+    description: 'Switch to agent 4 (Droid)',
+    category: 'Agent',
+  },
+  SWITCH_AGENT_5: {
+    key: '5',
+    modifier: 'cmd+shift' as const,
+    description: 'Switch to agent 5 (Gemini)',
+    category: 'Agent',
+  },
+  SWITCH_AGENT_6: {
+    key: '6',
+    modifier: 'cmd+shift' as const,
+    description: 'Switch to agent 6 (Cursor)',
+    category: 'Agent',
+  },
+  SWITCH_AGENT_7: {
+    key: '7',
+    modifier: 'cmd+shift' as const,
+    description: 'Switch to agent 7 (Copilot)',
+    category: 'Agent',
+  },
+  SWITCH_AGENT_8: {
+    key: '8',
+    modifier: 'cmd+shift' as const,
+    description: 'Switch to agent 8 (Amp)',
+    category: 'Agent',
+  },
+  SWITCH_AGENT_9: {
+    key: '9',
+    modifier: 'cmd+shift' as const,
+    description: 'Switch to agent 9 (Charm)',
+    category: 'Agent',
+  },
+} as const;
+
+/**
+ * Agent mapping for keyboard shortcuts
+ * Maps shortcut numbers to actual provider names
+ */
+export const AGENT_MAPPING: Record<number, Provider> = {
+  1: 'codex',    // OpenAI Codex
+  2: 'claude',   // Claude Code
+  3: 'qwen',     // Qwen Code
+  4: 'droid',    // Droid
+  5: 'gemini',   // Gemini
+  6: 'cursor',   // Cursor
+  7: 'copilot',  // GitHub Copilot
+  8: 'amp',      // Amp
+  9: 'charm',    // Charm
 } as const;
 
 /**
@@ -69,6 +198,8 @@ export function formatShortcut(shortcut: ShortcutConfig): string {
         ? '⌥'
         : shortcut.modifier === 'shift'
           ? '⇧'
+          : shortcut.modifier === 'cmd+shift'
+            ? '⌘⇧'
           : shortcut.modifier === 'alt'
             ? 'Alt'
             : 'Ctrl'
@@ -149,6 +280,116 @@ export function useKeyboardShortcuts(handlers: GlobalShortcutHandlers) {
         handler: () => handlers.onCloseModal?.(),
         priority: 'modal',
       },
+      // Workspace switching shortcuts
+      {
+        config: APP_SHORTCUTS.SWITCH_WORKSPACE_1,
+        handler: () => handlers.onSwitchWorkspace?.(1),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      {
+        config: APP_SHORTCUTS.SWITCH_WORKSPACE_2,
+        handler: () => handlers.onSwitchWorkspace?.(2),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      {
+        config: APP_SHORTCUTS.SWITCH_WORKSPACE_3,
+        handler: () => handlers.onSwitchWorkspace?.(3),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      {
+        config: APP_SHORTCUTS.SWITCH_WORKSPACE_4,
+        handler: () => handlers.onSwitchWorkspace?.(4),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      {
+        config: APP_SHORTCUTS.SWITCH_WORKSPACE_5,
+        handler: () => handlers.onSwitchWorkspace?.(5),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      {
+        config: APP_SHORTCUTS.SWITCH_WORKSPACE_6,
+        handler: () => handlers.onSwitchWorkspace?.(6),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      {
+        config: APP_SHORTCUTS.SWITCH_WORKSPACE_7,
+        handler: () => handlers.onSwitchWorkspace?.(7),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      {
+        config: APP_SHORTCUTS.SWITCH_WORKSPACE_8,
+        handler: () => handlers.onSwitchWorkspace?.(8),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      {
+        config: APP_SHORTCUTS.SWITCH_WORKSPACE_9,
+        handler: () => handlers.onSwitchWorkspace?.(9),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      // Agent switching shortcuts
+      {
+        config: APP_SHORTCUTS.SWITCH_AGENT_1,
+        handler: () => handlers.onSwitchAgent?.(1),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      {
+        config: APP_SHORTCUTS.SWITCH_AGENT_2,
+        handler: () => handlers.onSwitchAgent?.(2),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      {
+        config: APP_SHORTCUTS.SWITCH_AGENT_3,
+        handler: () => handlers.onSwitchAgent?.(3),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      {
+        config: APP_SHORTCUTS.SWITCH_AGENT_4,
+        handler: () => handlers.onSwitchAgent?.(4),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      {
+        config: APP_SHORTCUTS.SWITCH_AGENT_5,
+        handler: () => handlers.onSwitchAgent?.(5),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      {
+        config: APP_SHORTCUTS.SWITCH_AGENT_6,
+        handler: () => handlers.onSwitchAgent?.(6),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      {
+        config: APP_SHORTCUTS.SWITCH_AGENT_7,
+        handler: () => handlers.onSwitchAgent?.(7),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      {
+        config: APP_SHORTCUTS.SWITCH_AGENT_8,
+        handler: () => handlers.onSwitchAgent?.(8),
+        priority: 'global',
+        requiresClosed: true,
+      },
+      {
+        config: APP_SHORTCUTS.SWITCH_AGENT_9,
+        handler: () => handlers.onSwitchAgent?.(9),
+        priority: 'global',
+        requiresClosed: true,
+      },
     ];
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -161,12 +402,25 @@ export function useKeyboardShortcuts(handlers: GlobalShortcutHandlers) {
         if (!keyMatches) continue;
 
         // Check modifier requirements
-        const modifierRequired =
-          shortcut.config.modifier === 'cmd' || shortcut.config.modifier === 'ctrl';
-        const hasModifier = event.metaKey || event.ctrlKey;
+        let modifierRequired = false;
+        let hasRequiredModifier = false;
 
-        if (modifierRequired && !hasModifier) continue;
-        if (!modifierRequired && hasModifier) continue;
+        if (shortcut.config.modifier === 'cmd') {
+          modifierRequired = true;
+          hasRequiredModifier = event.metaKey && !event.shiftKey && !event.altKey && !event.ctrlKey;
+        } else if (shortcut.config.modifier === 'cmd+shift') {
+          modifierRequired = true;
+          hasRequiredModifier = event.metaKey && event.shiftKey && !event.altKey && !event.ctrlKey;
+        } else if (shortcut.config.modifier === 'option') {
+          modifierRequired = true;
+          hasRequiredModifier = event.altKey && !event.metaKey && !event.shiftKey && !event.ctrlKey;
+        } else if (shortcut.config.modifier === 'ctrl') {
+          modifierRequired = true;
+          hasRequiredModifier = event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey;
+        }
+
+        if (modifierRequired && !hasRequiredModifier) continue;
+        if (!modifierRequired && (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) continue;
 
         // Handle priority and modal state
         const isModalOpen = handlers.isCommandPaletteOpen || handlers.isSettingsOpen;

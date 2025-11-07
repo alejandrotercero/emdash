@@ -109,6 +109,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	worktreeGet: (args: { worktreeId: string }) =>
 		ipcRenderer.invoke("worktree:get", args),
 	worktreeGetAll: () => ipcRenderer.invoke("worktree:getAll"),
+	worktreeCreateMainBranch: (args: {
+		projectPath: string;
+		workspaceName: string;
+		projectId: string;
+	}) => ipcRenderer.invoke("worktree:createMainBranch", args),
 
 	// Filesystem helpers
 	fsList: (
@@ -156,6 +161,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		ipcRenderer.invoke("git:get-pr-status", args),
 	getBranchStatus: (args: { workspacePath: string }) =>
 		ipcRenderer.invoke("git:get-branch-status", args),
+	// Git fetch and pull operations
+	getRemoteStatus: (args: { workspacePath: string }) =>
+		ipcRenderer.invoke("git:get-remote-status", args),
+	gitFetch: (args: { workspacePath: string }) =>
+		ipcRenderer.invoke("git:fetch", args),
+	gitPull: (args: { workspacePath: string }) =>
+		ipcRenderer.invoke("git:pull", args),
+	getCommitHistory: (args: { workspacePath: string; limit?: number }) =>
+		ipcRenderer.invoke("git:get-commit-history", args),
+	hasUncommittedChanges: (args: { workspacePath: string }) =>
+		ipcRenderer.invoke("git:has-uncommitted-changes", args),
 	openExternal: (url: string) => ipcRenderer.invoke("app:openExternal", url),
 	// Telemetry (minimal, anonymous)
 	captureTelemetry: (
@@ -456,6 +472,15 @@ export interface ElectronAPI {
 		worktrees?: any[];
 		error?: string;
 	}>;
+	worktreeCreateMainBranch: (args: {
+		projectPath: string;
+		workspaceName: string;
+		projectId: string;
+	}) => Promise<{
+		success: boolean;
+		worktree?: any;
+		error?: string;
+	}>;
 
 	// Project management
 	openProject: () => Promise<{
@@ -516,6 +541,67 @@ export interface ElectronAPI {
 		success: boolean;
 		url?: string;
 		output?: string;
+		error?: string;
+	}>;
+	getPrStatus: (args: { workspacePath: string }) => Promise<{
+		success: boolean;
+		pr?: {
+			number: number;
+			url: string;
+			state: string;
+			isDraft?: boolean;
+			mergeStateStatus?: string;
+			headRefName?: string;
+			baseRefName?: string;
+			title?: string;
+			author?: any;
+		} | null;
+		error?: string;
+	}>;
+	getBranchStatus: (args: { workspacePath: string }) => Promise<{
+		success: boolean;
+		branch?: string;
+		defaultBranch?: string;
+		ahead?: number;
+		behind?: number;
+		error?: string;
+	}>;
+	// Git fetch and pull operations
+	getRemoteStatus: (args: { workspacePath: string }) => Promise<{
+		success: boolean;
+		status?: {
+			ahead: number;
+			behind: number;
+			hasNewCommits: boolean;
+			currentBranch: string;
+			remoteBranch: string;
+		} | null;
+		error?: string;
+	}>;
+	gitFetch: (args: { workspacePath: string }) => Promise<{
+		success: boolean;
+		output?: string;
+		message?: string;
+		error?: string;
+	}>;
+	gitPull: (args: { workspacePath: string }) => Promise<{
+		success: boolean;
+		message?: string;
+		error?: string;
+	}>;
+	getCommitHistory: (args: { workspacePath: string; limit?: number }) => Promise<{
+		success: boolean;
+		commits?: Array<{
+			hash: string;
+			author: string;
+			date: string;
+			message: string;
+		}>;
+		error?: string;
+	}>;
+	hasUncommittedChanges: (args: { workspacePath: string }) => Promise<{
+		success: boolean;
+		hasChanges?: boolean;
 		error?: string;
 	}>;
 	connectToGitHub: (

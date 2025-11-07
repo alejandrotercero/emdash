@@ -30,6 +30,22 @@ export interface Workspace {
 	status: "active" | "idle" | "running";
 	agentId?: string;
 	metadata?: any;
+	worktreeType?: "worktree" | "main";
+	gitPullEnabled?: boolean;
+	lastGitCheck?: string;
+	setupCommands?: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface SetupCommand {
+	id: string;
+	type: "global" | "project" | "workspace";
+	parentId: string; // project_id or workspace_id
+	commands: string[]; // JSON array of command strings
+	enabled: boolean;
+	name?: string;
+	description?: string;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -182,6 +198,51 @@ export class DatabaseService {
 			}
 		}
 
+		// Add new workspace columns for git polling and setup commands
+		try {
+			await runAsync(`ALTER TABLE workspaces ADD COLUMN worktree_type TEXT DEFAULT 'worktree'`);
+		} catch (error) {
+			if (
+				!(error instanceof Error) ||
+				!/duplicate column name/i.test(error.message)
+			) {
+				throw error;
+			}
+		}
+
+		try {
+			await runAsync(`ALTER TABLE workspaces ADD COLUMN git_pull_enabled BOOLEAN DEFAULT 1`);
+		} catch (error) {
+			if (
+				!(error instanceof Error) ||
+				!/duplicate column name/i.test(error.message)
+			) {
+				throw error;
+			}
+		}
+
+		try {
+			await runAsync(`ALTER TABLE workspaces ADD COLUMN last_git_check DATETIME`);
+		} catch (error) {
+			if (
+				!(error instanceof Error) ||
+				!/duplicate column name/i.test(error.message)
+			) {
+				throw error;
+			}
+		}
+
+		try {
+			await runAsync(`ALTER TABLE workspaces ADD COLUMN setup_commands TEXT`);
+		} catch (error) {
+			if (
+				!(error instanceof Error) ||
+				!/duplicate column name/i.test(error.message)
+			) {
+				throw error;
+			}
+		}
+
 		// Create conversations table
 		await runAsync(`
       CREATE TABLE IF NOT EXISTS conversations (
@@ -222,6 +283,21 @@ export class DatabaseService {
       )
     `);
 
+		// Create setup_commands table
+		await runAsync(`
+      CREATE TABLE IF NOT EXISTS setup_commands (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL CHECK (type IN ('global', 'project', 'workspace')),
+        parent_id TEXT NOT NULL,
+        commands TEXT NOT NULL,
+        enabled BOOLEAN DEFAULT 1,
+        name TEXT,
+        description TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
 		// Create indexes
 		await runAsync(
 			`CREATE INDEX IF NOT EXISTS idx_projects_path ON projects (path)`,
@@ -240,6 +316,9 @@ export class DatabaseService {
 		);
 		await runAsync(
 			`CREATE INDEX IF NOT EXISTS idx_custom_claude_configs_name ON custom_claude_configs (name)`,
+		);
+		await runAsync(
+			`CREATE INDEX IF NOT EXISTS idx_setup_commands_parent ON setup_commands (parent_id, type)`,
 		);
 	}
 
@@ -342,8 +421,8 @@ export class DatabaseService {
 			this.db!.run(
 				`
         INSERT OR REPLACE INTO workspaces
-        (id, project_id, name, branch, path, status, agent_id, metadata, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        (id, project_id, name, branch, path, status, agent_id, metadata, worktree_type, git_pull_enabled, last_git_check, setup_commands, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `,
 				[
 					workspace.id,
@@ -358,6 +437,10 @@ export class DatabaseService {
 						: workspace.metadata
 							? JSON.stringify(workspace.metadata)
 							: null,
+					workspace.worktreeType || 'worktree',
+					workspace.gitPullEnabled !== undefined ? (workspace.gitPullEnabled ? 1 : 0) : 1,
+					workspace.lastGitCheck || null,
+					workspace.setupCommands || null,
 				],
 				(err) => {
 					if (err) {
@@ -377,6 +460,7 @@ export class DatabaseService {
 		let query = `
       SELECT
         id, project_id, name, branch, path, status, agent_id, metadata,
+        worktree_type, git_pull_enabled, last_git_check, setup_commands,
         created_at, updated_at
       FROM workspaces
     `;
@@ -418,6 +502,10 @@ export class DatabaseService {
 							status: row.status,
 							agentId: row.agent_id,
 							metadata,
+							worktreeType: row.worktree_type as "worktree" | "main" || "worktree",
+							gitPullEnabled: !!row.git_pull_enabled,
+							lastGitCheck: row.last_git_check,
+							setupCommands: row.setup_commands,
 							createdAt: row.created_at,
 							updatedAt: row.updated_at,
 						};
@@ -821,6 +909,153 @@ export class DatabaseService {
 				},
 			);
 		});
+	}
+
+	// Setup command management methods
+	async saveSetupCommand(
+		command: Omit<SetupCommand, "createdAt" | "updatedAt">,
+	): Promise<void> {
+		if (this.disabled) return;
+		if (!this.db) throw new Error("Database not initialized");
+
+		return new Promise((resolve, reject) => {
+			this.db!.run(
+				`
+        INSERT OR REPLACE INTO setup_commands
+        (id, type, parent_id, commands, enabled, name, description, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `,
+				[
+					command.id,
+					command.type,
+					command.parentId,
+					JSON.stringify(command.commands),
+					command.enabled ? 1 : 0,
+					command.name || null,
+					command.description || null,
+				],
+				(err) => {
+					if (err) {
+						reject(err);
+					} else {
+						resolve();
+					}
+				},
+			);
+		});
+	}
+
+	async getSetupCommands(
+		type?: "global" | "project" | "workspace",
+		parentId?: string
+	): Promise<SetupCommand[]> {
+		if (this.disabled) return [];
+		if (!this.db) throw new Error("Database not initialized");
+
+		return new Promise((resolve, reject) => {
+			let query = `
+        SELECT
+          id, type, parent_id, commands, enabled, name, description,
+          created_at, updated_at
+        FROM setup_commands
+      `;
+			const params: any[] = [];
+
+			if (type && parentId) {
+				query += " WHERE type = ? AND parent_id = ?";
+				params.push(type, parentId);
+			} else if (type) {
+				query += " WHERE type = ?";
+				params.push(type);
+			} else if (parentId) {
+				query += " WHERE parent_id = ?";
+				params.push(parentId);
+			}
+
+			query += " ORDER BY created_at DESC";
+
+			this.db!.all(query, params, (err, rows: any[]) => {
+				if (err) {
+					reject(err);
+				} else {
+					const commands = rows.map((row) => {
+						let commandsArray: string[] = [];
+						try {
+							commandsArray = JSON.parse(row.commands);
+						} catch (parseError) {
+							console.warn("Failed to parse setup commands for", row.id, parseError);
+						}
+
+						return {
+							id: row.id,
+							type: row.type as "global" | "project" | "workspace",
+							parentId: row.parent_id,
+							commands: commandsArray,
+							enabled: !!row.enabled,
+							name: row.name,
+							description: row.description,
+							createdAt: row.created_at,
+							updatedAt: row.updated_at,
+						};
+					});
+					resolve(commands);
+				}
+			});
+		});
+	}
+
+	async deleteSetupCommand(id: string): Promise<void> {
+		if (this.disabled) return;
+		if (!this.db) throw new Error("Database not initialized");
+
+		return new Promise((resolve, reject) => {
+			this.db!.run(
+				"DELETE FROM setup_commands WHERE id = ?",
+				[id],
+				(err) => {
+					if (err) {
+						reject(err);
+					} else {
+						resolve();
+					}
+				},
+			);
+		});
+	}
+
+	// Get all setup commands for a workspace (including inherited from project and global)
+	async getEffectiveSetupCommands(workspaceId: string, projectId?: string): Promise<SetupCommand[]> {
+		if (this.disabled) return [];
+
+		const allCommands: SetupCommand[] = [];
+
+		// Get global commands
+		try {
+			const globalCommands = await this.getSetupCommands("global");
+			allCommands.push(...globalCommands.filter(cmd => cmd.enabled));
+		} catch (error) {
+			console.warn("Failed to get global setup commands:", error);
+		}
+
+		// Get project-specific commands
+		if (projectId) {
+			try {
+				const projectCommands = await this.getSetupCommands("project", projectId);
+				allCommands.push(...projectCommands.filter(cmd => cmd.enabled));
+			} catch (error) {
+				console.warn("Failed to get project setup commands:", error);
+			}
+		}
+
+		// Get workspace-specific commands
+		try {
+			const workspaceCommands = await this.getSetupCommands("workspace", workspaceId);
+			allCommands.push(...workspaceCommands.filter(cmd => cmd.enabled));
+		} catch (error) {
+			console.warn("Failed to get workspace setup commands:", error);
+		}
+
+		return allCommands;
 	}
 }
 

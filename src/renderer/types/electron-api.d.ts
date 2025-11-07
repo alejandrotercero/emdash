@@ -63,6 +63,15 @@ declare global {
         worktrees?: any[];
         error?: string;
       }>;
+      worktreeCreateMainBranch: (args: {
+        projectPath: string;
+        workspaceName: string;
+        projectId: string;
+      }) => Promise<{
+        success: boolean;
+        worktree?: any;
+        error?: string;
+      }>;
 
       // Project management
       openProject: () => Promise<{
@@ -156,6 +165,44 @@ declare global {
         defaultBranch?: string;
         ahead?: number;
         behind?: number;
+        error?: string;
+      }>;
+      // Git fetch and pull operations
+      getRemoteStatus: (args: { workspacePath: string }) => Promise<{
+        success: boolean;
+        status?: {
+          ahead: number;
+          behind: number;
+          hasNewCommits: boolean;
+          currentBranch: string;
+          remoteBranch: string;
+        } | null;
+        error?: string;
+      }>;
+      gitFetch: (args: { workspacePath: string }) => Promise<{
+        success: boolean;
+        output?: string;
+        message?: string;
+        error?: string;
+      }>;
+      gitPull: (args: { workspacePath: string }) => Promise<{
+        success: boolean;
+        message?: string;
+        error?: string;
+      }>;
+      getCommitHistory: (args: { workspacePath: string; limit?: number }) => Promise<{
+        success: boolean;
+        commits?: Array<{
+          hash: string;
+          author: string;
+          date: string;
+          message: string;
+        }>;
+        error?: string;
+      }>;
+      hasUncommittedChanges: (args: { workspacePath: string }) => Promise<{
+        success: boolean;
+        hasChanges?: boolean;
         error?: string;
       }>;
       openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;

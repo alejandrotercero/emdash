@@ -18,10 +18,11 @@ interface Workspace {
 
 interface WorkspaceItemProps {
   workspace: Workspace;
+  index?: number; // For keyboard shortcuts (1-9)
   onDelete?: () => void | Promise<void>;
 }
 
-export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace, onDelete }) => {
+export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace, index, onDelete }) => {
   const { totalAdditions, totalDeletions, isLoading } = useWorkspaceChanges(
     workspace.path,
     workspace.id
@@ -33,15 +34,21 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace, onDelet
 
   return (
     <div className="flex min-w-0 items-center justify-between">
-      <div className="flex min-w-0 flex-1 items-center gap-2 py-1">
-        {isRunning || workspace.status === 'running' || workspace.agentId ? (
-          <Spinner size="sm" className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
-        ) : (
-          <GitBranch className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+      <div className="flex min-w-0 flex-1 flex-col py-1">
+        <div className="flex items-center gap-2">
+          {isRunning || workspace.status === 'running' || workspace.agentId ? (
+            <Spinner size="sm" className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+          ) : (
+            <GitBranch className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+          )}
+          <span className="block truncate text-xs font-medium text-foreground">{workspace.name}</span>
+          {workspace.agentId && <Bot className="h-3 w-3 flex-shrink-0 text-purple-500" />}
+        </div>
+        {index && index <= 9 && (
+          <div className="flex items-center gap-1 mt-0.5 ml-5">
+            <span className="text-[8px] text-muted-foreground">⌘{index}</span>
+          </div>
         )}
-        <span className="block truncate text-xs font-medium text-foreground">{workspace.name}</span>
-        {workspace.agentId && <Bot className="h-3 w-3 flex-shrink-0 text-purple-500" />}
-        {/* No left-side delete icon; only show next to status badge on the right */}
       </div>
       <div className="flex flex-shrink-0 items-center space-x-2">
         {!isLoading && (totalAdditions > 0 || totalDeletions > 0) ? (

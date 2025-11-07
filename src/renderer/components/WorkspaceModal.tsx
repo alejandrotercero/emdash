@@ -12,6 +12,7 @@ import { type Provider } from '../types';
 import { Separator } from './ui/separator';
 import { type LinearIssueSummary } from '../types/linear';
 import { LinearIssueSelector } from './LinearIssueSelector';
+import SimpleGitStatus from './SimpleGitStatus';
 
 interface WorkspaceModalProps {
   isOpen: boolean;
@@ -20,10 +21,13 @@ interface WorkspaceModalProps {
     name: string,
     initialPrompt?: string,
     selectedProvider?: Provider,
-    linkedIssue?: LinearIssueSummary | null
+    linkedIssue?: LinearIssueSummary | null,
+    worktreeType?: 'worktree' | 'main'
   ) => void;
   projectName: string;
+  projectPath: string;
   defaultBranch: string;
+  projectId: string;
   existingNames?: string[];
 }
 
@@ -32,7 +36,9 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   onClose,
   onCreateWorkspace,
   projectName,
+  projectPath,
   defaultBranch,
+  projectId,
   existingNames = [],
 }) => {
   const [workspaceName, setWorkspaceName] = useState('');
@@ -43,6 +49,8 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   const [touched, setTouched] = useState(false);
   const [initialPrompt, setInitialPrompt] = useState('');
   const [selectedIssue, setSelectedIssue] = useState<LinearIssueSummary | null>(null);
+  const [linearConnected, setLinearConnected] = useState(false);
+  const [worktreeType, setWorktreeType] = useState<'worktree' | 'main'>('worktree');
   const shouldReduceMotion = useReducedMotion();
 
   const normalizedExisting = existingNames.map((n) => n.toLowerCase());
@@ -59,6 +67,11 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   };
 
   const validate = (value: string): string | null => {
+    // No validation needed for main branch workspaces
+    if (worktreeType === 'main') {
+      return null;
+    }
+
     const name = value.trim();
     if (!name) return 'Please enter a workspace name.';
 
@@ -85,6 +98,21 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
       setSelectedIssue(null);
     }
   }, [isOpen]);
+
+  // Check Linear connection status
+  useEffect(() => {
+    const checkLinearConnection = async () => {
+      try {
+        const status = await window.electronAPI?.linearCheckConnection?.();
+        setLinearConnected(!!status?.connected);
+      } catch (error) {
+        console.error('Failed to check Linear connection:', error);
+        setLinearConnected(false);
+      }
+    };
+
+    checkLinearConnection();
+  }, []);
 
   return createPortal(
     <AnimatePresence>
@@ -124,9 +152,16 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
               </Button>
               <CardHeader className="space-y-1 pb-2 pr-12">
                 <CardTitle className="text-lg">New Workspace</CardTitle>
-                <CardDescription className="text-xs text-muted-foreground">
-                  {projectName} • from origin/{defaultBranch}
-                </CardDescription>
+                <div className="flex items-center justify-between gap-3">
+                  <CardDescription className="text-xs text-muted-foreground">
+                    {projectName} • from origin/{defaultBranch}
+                  </CardDescription>
+                  <SimpleGitStatus
+                    projectPath={projectPath}
+                    projectId={projectId}
+                    currentBranch={defaultBranch}
+                  />
+                </div>
               </CardHeader>
 
               <CardContent>
@@ -143,11 +178,16 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                     setIsCreating(true);
                     (async () => {
                       try {
+                        const workspaceNameToUse = worktreeType === 'main'
+                          ? `${projectName}-${defaultBranch}`
+                          : convertToWorkspaceName(workspaceName);
+
                         await onCreateWorkspace(
-                          convertToWorkspaceName(workspaceName),
+                          workspaceNameToUse,
                           showAdvanced ? initialPrompt.trim() || undefined : undefined,
                           selectedProvider,
-                          selectedIssue
+                          selectedIssue,
+                          worktreeType
                         );
                         setWorkspaceName('');
                         setInitialPrompt('');
@@ -165,39 +205,99 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                   }}
                   className="space-y-4"
                 >
-                  <div>
-                    <label
-                      htmlFor="workspace-name"
-                      className="block text-sm font-medium text-foreground"
-                    >
-                      Task name
-                    </label>
-                    <Input
-                      id="workspace-name"
-                      value={workspaceName}
-                      onChange={(e) => onChange(e.target.value)}
-                      onBlur={() => setTouched(true)}
-                      placeholder="e.g. refactorApiRoutes"
-                      className="w-full"
-                      aria-invalid={touched && !!error}
-                      aria-describedby="workspace-name-error"
-                      autoFocus
-                    />
-                    {touched && error && (
-                      <p id="workspace-name-error" className="mt-2 text-sm text-destructive">
-                        {error}
-                      </p>
-                    )}
-                  </div>
+                  {worktreeType === 'worktree' && (
+                    <>
+                      <div>
+                        <label
+                          htmlFor="workspace-name"
+                          className="block text-sm font-medium text-foreground"
+                        >
+                          Task name
+                        </label>
+                        <Input
+                          id="workspace-name"
+                          value={workspaceName}
+                          onChange={(e) => onChange(e.target.value)}
+                          onBlur={() => setTouched(true)}
+                          placeholder="e.g. refactorApiRoutes"
+                          className="w-full"
+                          aria-invalid={touched && !!error}
+                          aria-describedby="workspace-name-error"
+                          autoFocus={worktreeType === 'worktree'}
+                        />
+                        {touched && error && (
+                          <p id="workspace-name-error" className="mt-2 text-sm text-destructive">
+                            {error}
+                          </p>
+                        )}
+                      </div>
 
-                  {workspaceName && (
-                    <div className="flex items-center space-x-2 rounded-lg bg-gray-100 p-3 dark:bg-gray-700">
-                      <GitBranch className="h-4 w-4 flex-shrink-0 text-gray-500" />
-                      <span className="overflow-hidden break-all text-sm text-gray-600 dark:text-gray-400">
-                        {convertToWorkspaceName(workspaceName)}
+                      {workspaceName && (
+                        <div className="flex items-center space-x-2 rounded-lg bg-gray-100 p-3 dark:bg-gray-700">
+                          <GitBranch className="h-4 w-4 flex-shrink-0 text-gray-500" />
+                          <span className="overflow-hidden break-all text-sm text-gray-600 dark:text-gray-400">
+                            {convertToWorkspaceName(workspaceName)}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {worktreeType === 'main' && (
+                    <div className="flex items-center space-x-2 rounded-lg bg-green-50 p-3 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                      <GitBranch className="h-4 w-4 flex-shrink-0 text-green-600 dark:text-green-400" />
+                      <span className="text-sm text-green-700 dark:text-green-300">
+                        Working directly on <strong>{defaultBranch}</strong>
                       </span>
                     </div>
                   )}
+
+                  <div className="flex items-center gap-4">
+                    <label
+                      htmlFor="worktree-type"
+                      className="w-32 shrink-0 text-sm font-medium text-foreground"
+                    >
+                      Workspace type
+                    </label>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setWorktreeType('worktree')}
+                          className={`px-3 py-2 text-sm rounded-md border transition-colors ${
+                            worktreeType === 'worktree'
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : 'border-border bg-background hover:bg-muted'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <GitBranch className="h-4 w-4" />
+                            Worktree
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setWorktreeType('main')}
+                          className={`px-3 py-2 text-sm rounded-md border transition-colors ${
+                            worktreeType === 'main'
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : 'border-border bg-background hover:bg-muted'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <GitBranch className="h-4 w-4" />
+                            Main
+                          </div>
+                        </button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {worktreeType === 'worktree'
+                          ? 'Create an isolated Git worktree for this workspace'
+                          : 'Work directly on the main branch (no isolation)'
+                        }
+                      </p>
+                    </div>
+                  </div>
 
                   <div className="flex items-center gap-4">
                     <label
@@ -228,22 +328,24 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                       </AccordionTrigger>
                       <AccordionContent className="space-y-4 px-0 pt-2" id="workspace-advanced">
                         <div className="flex flex-col gap-4">
-                          <div className="flex items-start gap-4">
-                            <label
-                              htmlFor="linear-issue"
-                              className="w-32 shrink-0 pt-2 text-sm font-medium text-foreground"
-                            >
-                              Linear issue
-                            </label>
-                            <div className="min-w-0 flex-1">
-                              <LinearIssueSelector
-                                selectedIssue={selectedIssue}
-                                onIssueChange={setSelectedIssue}
-                                isOpen={isOpen && showAdvanced}
-                                className="w-full"
-                              />
+                          {linearConnected && (
+                            <div className="flex items-start gap-4">
+                              <label
+                                htmlFor="linear-issue"
+                                className="w-32 shrink-0 pt-2 text-sm font-medium text-foreground"
+                              >
+                                Linear issue
+                              </label>
+                              <div className="min-w-0 flex-1">
+                                <LinearIssueSelector
+                                  selectedIssue={selectedIssue}
+                                  onIssueChange={setSelectedIssue}
+                                  isOpen={isOpen && showAdvanced}
+                                  className="w-full"
+                                />
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                         <div className="flex items-start gap-4">
                           <label

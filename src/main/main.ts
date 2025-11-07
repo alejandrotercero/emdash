@@ -64,7 +64,6 @@ import { createMainWindow } from './app/window';
 import { registerAppLifecycle } from './app/lifecycle';
 import { registerAllIpc } from './ipc';
 import { databaseService } from './services/DatabaseService';
-import * as telemetry from './telemetry';
 
 // App bootstrap
 app.whenReady().then(async () => {
@@ -74,29 +73,6 @@ app.whenReady().then(async () => {
     // console.log('Database initialized successfully');
   } catch (error) {
     // console.error('Failed to initialize database:', error);
-  }
-
-  // Initialize telemetry (privacy-first, anonymous)
-  telemetry.init({ installSource: app.isPackaged ? 'dmg' : 'dev' });
-
-  // Best-effort: capture a coarse snapshot of project/workspace counts (no names/paths)
-  try {
-    const [projects, workspaces] = await Promise.all([
-      databaseService.getProjects(),
-      databaseService.getWorkspaces(),
-    ]);
-    const projectCount = projects.length;
-    const workspaceCount = workspaces.length;
-    const toBucket = (n: number) =>
-      n === 0 ? '0' : n <= 2 ? '1-2' : n <= 5 ? '3-5' : n <= 10 ? '6-10' : '>10';
-    telemetry.capture('workspace_snapshot', {
-      project_count: projectCount,
-      project_count_bucket: toBucket(projectCount),
-      workspace_count: workspaceCount,
-      workspace_count_bucket: toBucket(workspaceCount),
-    } as any);
-  } catch {
-    // ignore errors — telemetry is best-effort only
   }
 
   // Register IPC handlers
@@ -109,10 +85,7 @@ app.whenReady().then(async () => {
 // App lifecycle handlers
 registerAppLifecycle();
 
-// Graceful shutdown telemetry event
+// Graceful shutdown
 app.on('before-quit', () => {
-  // Session summary with duration (no identifiers)
-  telemetry.capture('app_session');
-  telemetry.capture('app_closed');
-  telemetry.shutdown();
+  // App shutdown cleanup
 });

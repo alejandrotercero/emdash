@@ -199,6 +199,63 @@ This removes `node_modules` and reinstalls everything from scratch.
 
 In the chat input, use the provider selector to switch between Codex and Claude Code. Once a chat has started with Codex or Claude, the provider is locked for that chat.
 
+### Workspace Types
+
+Emdash supports two types of workspaces:
+
+#### Worktree Workspaces
+- **Isolated branches** - Each workspace creates a new Git branch and worktree
+- **Safe experimentation** - Changes are isolated from main branch
+- **Pull request workflow** - Supports PR creation and tracking
+- **Task-focused naming** - Use descriptive task names like "refactor-api-routes"
+- **Session-wide shortcuts** - Navigate with ⌘1, ⌘2, etc.
+
+#### Main Workspaces
+- **Direct main branch work** - Work directly on your main branch without creating a new branch
+- **No task name required** - Simplified creation process with "Main" option
+- **No PR workflow** - Changes are committed directly to main
+- **Deletion protected** - Main workspaces cannot be accidentally deleted
+- **Session-wide shortcuts** - Navigate with ⌘1, ⌘2, etc. alongside worktree workspaces
+
+**To create a workspace:**
+1. Click "New Workspace"
+2. Choose workspace type:
+   - **Worktree** - For isolated feature work with PRs
+   - **Main** - For direct main branch work
+3. Select AI provider and create workspace
+
+**Keyboard shortcuts for workspace navigation:**
+- ⌘1-9 → Switch to workspace 1-9 (session-wide across all projects)
+- ⌘⇧1-9 → Switch AI agents (Codex, Claude, etc.)
+
+**Visual indicators help you identify workspace type:**
+- 🏷️ **Green "Main" badge** for main workspaces
+- 🗑️ **Delete button** only shown for worktree workspaces
+- 🟢 **PR badges** only shown for worktree workspaces
+- ⌘1, ⌘2... shown under workspace names for quick navigation
+
+### Git Integration
+
+Emdash provides comprehensive Git integration for keeping your workspaces up-to-date:
+
+#### Manual Git Operations
+- **Fetch and Pull** - Manually check for and pull remote updates
+- **Commit tracking** - Shows number of commits ahead/behind remote
+- **Visual status indicators** - Orange badge for updates, green for up-to-date
+- **Workspace-level operations** - Git status available in workspace list
+
+#### Git Status Display
+- **Automatic checking** - Git status is automatically checked when workspace loads
+- **Real-time updates** - Pull operations update status immediately
+- **Error handling** - Graceful handling when Git is not available
+- **User-friendly messages** - Clear success/failure notifications
+- **One-click pull** - Click the pull status badge to immediately pull updates
+
+**Git requirements:**
+- Git must be installed and accessible in system PATH
+- Git status operations work with both workspace types
+- Main workspaces have simplified git workflow (no PRs needed)
+
 ## Build from Source
 
 ### macOS
@@ -438,10 +495,13 @@ find "$HOME" -type f -name 'emdash.db*' -print
 ## What's Next
 
 - [ ] Additional providers
+- [x] **Main Branch Workspace Support** - Work directly on main branch without creating worktrees
+- [x] **Git Integration** - Manual fetch/pull with status tracking
 - [ ] Workspace lifecycle hooks to run custom scripts on create, run, and archive (e.g., install deps, copy env files, clean up resources)
 - [ ] Planning chat with controlled execution (draft actions in a separate chat, then run them one by one)
 - [x] Linear integration to track and close out issues
 - [ ] Assign the same prompt to different providers at the same time and compare results
+- [ ] Hierarchical setup commands - Global → Project → Workspace command execution
 
 ## Security & Privacy
 

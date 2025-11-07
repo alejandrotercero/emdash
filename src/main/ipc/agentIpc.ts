@@ -1,6 +1,7 @@
 import { BrowserWindow, ipcMain } from "electron";
 import { agentService } from "../services/AgentService";
 import { codexService } from "../services/CodexService";
+import { agentSwitchingService } from "../services/AgentSwitchingService";
 
 export function registerAgentIpc() {
 	// Installation check
@@ -112,6 +113,77 @@ export function registerAgentIpc() {
 	agentService.on("agent:complete", (data: any) => {
 		const windows = BrowserWindow.getAllWindows();
 		windows.forEach((w) => w.webContents.send("agent:stream-complete", data));
+	});
+
+	// Agent switching handlers
+	ipcMain.handle("agent:switch", async (event, { workspaceId, provider }) => {
+		try {
+			if (!workspaceId || !provider) {
+				throw new Error('Workspace ID and provider are required');
+			}
+
+			const switchInfo = await agentSwitchingService.switchAgent(workspaceId, provider);
+
+			return {
+				success: true,
+				switchInfo,
+			};
+		} catch (error) {
+			console.error('Failed to switch agent:', error);
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : 'Unknown error',
+			};
+		}
+	});
+
+	ipcMain.handle("agent:get-current", async (event, workspaceId) => {
+		try {
+			if (!workspaceId) {
+				throw new Error('Workspace ID is required');
+			}
+
+			const currentProvider = await agentSwitchingService.getCurrentProvider(workspaceId);
+
+			return {
+				success: true,
+				provider: currentProvider,
+			};
+		} catch (error) {
+			console.error('Failed to get current agent:', error);
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : 'Unknown error',
+			};
+		}
+	});
+
+	ipcMain.handle("agent:get-available", async () => {
+		try {
+			const providers = agentSwitchingService.getAvailableProviders();
+
+			return {
+				success: true,
+				providers,
+			};
+		} catch (error) {
+			console.error('Failed to get available providers:', error);
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : 'Unknown error',
+			};
+		}
+	});
+
+	// Forward agent switching events to renderer
+	agentSwitchingService.on('agent-switched', (switchInfo) => {
+		const windows = BrowserWindow.getAllWindows();
+		windows.forEach((w) => w.webContents.send('agent:switched', switchInfo));
+	});
+
+	agentSwitchingService.on('agent-switch-failed', (switchInfo) => {
+		const windows = BrowserWindow.getAllWindows();
+		windows.forEach((w) => w.webContents.send('agent:switch-failed', switchInfo));
 	});
 
 	// console.log('✅ Agent IPC handlers registered');
