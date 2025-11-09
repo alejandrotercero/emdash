@@ -64,6 +64,7 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
         <TerminalPane
           id={`workspace-${workspace.id}`}
           cwd={workspace.path}
+          keepAlive={true}
           variant={effectiveTheme === 'dark' ? 'dark' : 'light'}
           className="h-full w-full"
         />
