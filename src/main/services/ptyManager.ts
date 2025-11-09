@@ -90,3 +90,30 @@ export function hasPty(id: string): boolean {
 export function getPty(id: string): IPty | undefined {
   return ptys.get(id)?.proc;
 }
+
+/**
+ * Kill all active PTY sessions.
+ * IMPORTANT: Must be called before app quit to prevent crashes.
+ */
+export function killAllPtys(): void {
+  console.log(`[ptyManager] Cleaning up ${ptys.size} active PTY sessions...`);
+
+  const ptyIds = Array.from(ptys.keys());
+
+  for (const id of ptyIds) {
+    try {
+      const rec = ptys.get(id);
+      if (rec) {
+        console.log(`[ptyManager] Killing PTY: ${id}`);
+        rec.proc.kill();
+        ptys.delete(id);
+      }
+    } catch (err) {
+      console.error(`[ptyManager] Error killing PTY ${id}:`, err);
+      // Still remove it from the map
+      ptys.delete(id);
+    }
+  }
+
+  console.log('[ptyManager] All PTY sessions cleaned up');
+}

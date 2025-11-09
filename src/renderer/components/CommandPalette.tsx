@@ -196,6 +196,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
         opencode: 'OpenCode',
         charm: 'Charm',
         auggie: 'Auggie',
+        kimi: 'Kimi',
       };
 
       Object.entries(AGENT_MAPPING).forEach(([index, provider]) => {

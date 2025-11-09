@@ -15,10 +15,10 @@ export function registerAppIpc() {
     }
   });
 
-  // Open a filesystem path in a specific application (Finder/Cursor/VS Code/Terminal)
+  // Open a filesystem path in a specific application (Finder/Zed/VS Code/Ghostty)
   ipcMain.handle(
     'app:openIn',
-    async (_event, args: { app: 'finder' | 'cursor' | 'vscode' | 'terminal'; path: string }) => {
+    async (_event, args: { app: 'finder' | 'zed' | 'vscode' | 'ghostty'; path: string }) => {
       const target = args?.path;
       const which = args?.app;
       if (!target || typeof target !== 'string' || !which) {
@@ -35,17 +35,17 @@ export function registerAppIpc() {
               // Open directory in Finder
               command = `open ${quoted(target)}`;
               break;
-            case 'cursor':
+            case 'zed':
               // Prefer CLI when available to ensure the folder opens in-app
-              command = `command -v cursor >/dev/null 2>&1 && cursor ${quoted(target)} || open -a "Cursor" ${quoted(target)}`;
+              command = `command -v zed >/dev/null 2>&1 && zed ${quoted(target)} || open -a "Zed" ${quoted(target)}`;
               break;
             case 'vscode':
               command = `command -v code >/dev/null 2>&1 && code ${quoted(target)} || open -a "Visual Studio Code" ${quoted(target)}`;
               break;
-            case 'terminal':
-              // Open Terminal app at the target directory
-              // This should open a new tab/window with CWD set to target
-              command = `open -a Terminal ${quoted(target)}`;
+            case 'ghostty':
+              // Open Ghostty terminal at the target directory
+              // This should open a new window with CWD set to target
+              command = `open -a Ghostty ${quoted(target)}`;
               break;
           }
         } else if (platform === 'win32') {
@@ -53,16 +53,16 @@ export function registerAppIpc() {
             case 'finder':
               command = `explorer ${quoted(target)}`;
               break;
-            case 'cursor':
-              // Cursor installer usually adds to PATH; fallback to app path is omitted
-              command = `start "" cursor ${quoted(target)}`;
+            case 'zed':
+              // Zed installer usually adds to PATH; fallback to app path is omitted
+              command = `start "" zed ${quoted(target)}`;
               break;
             case 'vscode':
               command = `start "" code ${quoted(target)}`;
               break;
-            case 'terminal':
-              // Prefer Windows Terminal if available, fallback to cmd
-              command = `wt -d ${quoted(target)} || start cmd /K "cd /d ${target}"`;
+            case 'ghostty':
+              // Prefer Ghostty if available
+              command = `start "" ghostty -d ${quoted(target)}`;
               break;
           }
         } else {
@@ -71,15 +71,15 @@ export function registerAppIpc() {
             case 'finder':
               command = `xdg-open ${quoted(target)}`;
               break;
-            case 'cursor':
-              command = `cursor ${quoted(target)}`;
+            case 'zed':
+              command = `zed ${quoted(target)}`;
               break;
             case 'vscode':
               command = `code ${quoted(target)}`;
               break;
-            case 'terminal':
-              // Try x-terminal-emulator as a generic launcher
-              command = `x-terminal-emulator --working-directory=${quoted(target)} || gnome-terminal --working-directory=${quoted(target)} || konsole --workdir ${quoted(target)}`;
+            case 'ghostty':
+              // Try ghostty
+              command = `ghostty --working-directory=${quoted(target)}`;
               break;
           }
         }
