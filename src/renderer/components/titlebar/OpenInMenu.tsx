@@ -1,9 +1,9 @@
 import React from 'react';
 import { ChevronDown, Code2 } from 'lucide-react';
 import { Button } from '../ui/button';
-import cursorLogo from '../../../assets/images/cursorlogo.png';
+import zedLogo from '../../../assets/images/zed.png';
 import finderLogo from '../../../assets/images/finder.png';
-import terminalLogo from '../../../assets/images/terminal.png';
+import ghosttyLogo from '../../../assets/images/ghostty.png';
 
 interface OpenInMenuProps {
   path: string;
@@ -26,7 +26,7 @@ const OpenInMenu: React.FC<OpenInMenuProps> = ({ path, align = 'right' }) => {
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [open]);
 
-  const callOpen = async (app: 'finder' | 'cursor' | 'vscode' | 'terminal') => {
+  const callOpen = async (app: 'finder' | 'zed' | 'vscode' | 'ghostty') => {
     try {
       await (window as any).electronAPI?.openIn?.({ app, path });
     } catch {}
@@ -59,13 +59,13 @@ const OpenInMenu: React.FC<OpenInMenuProps> = ({ path, align = 'right' }) => {
             <img src={finderLogo} alt="Finder" className="h-4 w-4 rounded" />
             <span>Finder</span>
           </button>
-          <button className={menuItemBase} role="menuitem" onClick={() => callOpen('cursor')}>
-            <img src={cursorLogo} alt="Cursor" className="h-4 w-4" />
-            <span>Cursor</span>
+          <button className={menuItemBase} role="menuitem" onClick={() => callOpen('zed')}>
+            <img src={zedLogo} alt="Zed" className="h-4 w-4" />
+            <span>Zed</span>
           </button>
-          <button className={menuItemBase} role="menuitem" onClick={() => callOpen('terminal')}>
-            <img src={terminalLogo} alt="Terminal" className="h-4 w-4 rounded" />
-            <span>Terminal</span>
+          <button className={menuItemBase} role="menuitem" onClick={() => callOpen('ghostty')}>
+            <img src={ghosttyLogo} alt="Ghostty" className="h-4 w-4 rounded" />
+            <span>Ghostty</span>
           </button>
         </div>
       )}
