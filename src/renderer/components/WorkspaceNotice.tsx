@@ -66,18 +66,18 @@ export const WorkspaceNotice: React.FC<Props> = ({
 		: provider ? providerMap[provider] : null;
 
 	return (
-		<div className="flex items-center justify-between  text-sm  text-neutral-400 ">
+		<div className="flex items-center justify-between text-sm">
 			<div className="flex items-center gap-2">
-				<span className="text-neutral-500 uppercase text-xs font-mono ">
+				<span className="text-xs font-mono uppercase text-muted-foreground">
 					Workspace:
 				</span>
-				<span className="text-xs text-neutral-100 font-mono">
+				<span className="text-xs font-mono text-foreground">
 					{workspaceName}
 				</span>
 			</div>
 			{provider && providerInfo && (
 				<div className="flex items-center gap-2">
-					<span className="text-neutral-500 uppercase text-xs font-mono">
+					<span className="text-xs font-mono uppercase text-muted-foreground">
 						Provider:
 					</span>
 					{providerInfo.logo && (
@@ -87,7 +87,7 @@ export const WorkspaceNotice: React.FC<Props> = ({
 							className="h-4 w-4 rounded-sm object-contain"
 						/>
 					)}
-					<span className="text-xs text-neutral-100 font-mono">
+					<span className="text-xs font-mono text-foreground">
 						{providerInfo.name}
 					</span>
 				</div>
