@@ -221,132 +221,39 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
 
   return (
     <div className={`flex h-full flex-col bg-white shadow-sm dark:bg-black ${className}`}>
-      <div className="bg-gray-50 px-3 py-2 dark:bg-gray-900">
-        {hasChanges ? (
-          <div className="space-y-3">
-            {/* File count and stats */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {fileChanges.length} files changed
-                </span>
-                <div className="flex items-center space-x-1 text-xs">
-                  <span className="font-medium text-green-600 dark:text-green-400">
-                    +{totalChanges.additions}
-                  </span>
-                  <span className="text-gray-400">•</span>
-                  <span className="font-medium text-red-600 dark:text-red-400">
-                    -{totalChanges.deletions}
-                  </span>
-                </div>
-                {hasStagedChanges && (
-                  <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-900/30 dark:text-gray-300">
-                    {fileChanges.filter((f) => f.isStaged).length} staged
-                  </span>
-                )}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 border-gray-200 px-2 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-200"
-                disabled={isCreatingPR}
-                title="Commit all changes and create a pull request"
-                onClick={async () => {
-                  await createPR({
-                    workspacePath: workspaceId,
-                    onSuccess: async () => {
-                      await refreshChanges();
-                      try {
-                        await refreshPr();
-                      } catch {}
-                    },
-                  });
-                }}
-              >
-                {isCreatingPR ? <Spinner size="sm" /> : 'Create PR'}
-              </Button>
-            </div>
-
-            {hasStagedChanges && (
-              <div className="flex items-center space-x-2">
-                <Input
-                  placeholder="Enter commit message..."
-                  value={commitMessage}
-                  onChange={(e) => setCommitMessage(e.target.value)}
-                  className="h-8 flex-1 text-sm"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleCommitAndPush();
-                    }
-                  }}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 border-gray-200 px-2 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-200"
-                  title="Commit all staged changes and push the branch"
-                  onClick={handleCommitAndPush}
-                  disabled={isCommitting || !commitMessage.trim()}
-                >
-                  {isCommitting ? <Spinner size="sm" /> : 'Commit & Push'}
-                </Button>
-              </div>
-            )}
+      {hasStagedChanges && (
+        <div className="bg-gray-50 px-3 py-1.5 dark:bg-gray-900">
+          <div className="flex items-center space-x-2">
+            <Input
+              placeholder="Enter commit message..."
+              value={commitMessage}
+              onChange={(e) => setCommitMessage(e.target.value)}
+              className="h-7 flex-1 text-sm"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleCommitAndPush();
+                }
+              }}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 border-gray-200 px-2 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-200"
+              title="Commit all staged changes and push the branch"
+              onClick={handleCommitAndPush}
+              disabled={isCommitting || !commitMessage.trim()}
+            >
+              {isCommitting ? <Spinner size="sm" /> : 'Commit & Push'}
+            </Button>
           </div>
-        ) : (
-          <div className="flex w-full items-center justify-between">
-            <div className="flex items-center gap-2 p-2">
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Changes</span>
-            </div>
-            <div className="flex items-center gap-2">
-              {prLoading ? (
-                <PrStatusSkeleton />
-              ) : pr ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    window.electronAPI?.openExternal?.(pr.url);
-                  }}
-                  className="cursor-pointer rounded border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
-                  title={pr.title || 'Pull Request'}
-                >
-                  PR {pr.isDraft ? 'draft' : pr.state.toLowerCase()}
-                </button>
-              ) : branchStatusLoading || (branchAhead !== null && branchAhead > 0) ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 border-gray-200 px-2 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-200"
-                  disabled={isCreatingPR || branchStatusLoading}
-                  title="Create a pull request for the current branch"
-                  onClick={async () => {
-                    await createPR({
-                      workspacePath: workspaceId,
-                      onSuccess: async () => {
-                        await refreshChanges();
-                        try {
-                          await refreshPr();
-                        } catch {}
-                      },
-                    });
-                  }}
-                >
-                  {isCreatingPR || branchStatusLoading ? <Spinner size="sm" /> : 'Create PR'}
-                </Button>
-              ) : (
-                <span className="text-xs text-gray-500">No PR for this branch</span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
+        </div>
+      )}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {fileChanges.map((change, index) => (
           <div
             key={index}
-            className={`flex cursor-pointer items-center justify-between border-b border-gray-100 px-4 py-2.5 last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-900/40 ${
+            className={`flex cursor-pointer items-center justify-between border-b border-gray-100 px-3 py-1.5 last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-900/40 ${
               change.isStaged ? 'bg-gray-50 dark:bg-gray-900/40' : ''
             }`}
             onClick={() => {

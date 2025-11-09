@@ -8,6 +8,7 @@ import cursorLogo from "../../assets/images/cursorlogo.png";
 import factoryLogo from "../../assets/images/factorydroid.png";
 import geminiLogo from "../../assets/images/gemini.png";
 import copilotLogo from "../../assets/images/ghcopilot.png";
+import kimiLogo from "../../assets/images/kimi.png";
 import openaiLogo from "../../assets/images/openai.png";
 import opencodeLogo from "../../assets/images/opencode.png";
 import qwenLogo from "../../assets/images/qwen.png";
@@ -55,6 +56,7 @@ export const WorkspaceNotice: React.FC<Props> = ({
 		opencode: { name: "OpenCode", logo: opencodeLogo },
 		charm: { name: "Charm", logo: charmLogo },
 		auggie: { name: "Auggie", logo: augmentLogo },
+		kimi: { name: "Kimi", logo: kimiLogo },
 	} as const;
 
 	// Handle custom Claude configs

@@ -9,7 +9,8 @@ export type UiProvider =
   | 'amp'
   | 'opencode'
   | 'charm'
-  | 'auggie';
+  | 'auggie'
+  | 'kimi';
 
 export type ProviderMeta = {
   label: string;
@@ -147,5 +148,17 @@ export const providerMeta: Record<UiProvider, ProviderMeta> = {
       /Yes, and approve/i,
     ],
     busyPatterns: [/Thinking|Working|Generating/i],
+  },
+  kimi: {
+    label: 'Kimi',
+    icon: '../../assets/images/kimi.png',
+    terminalOnly: true,
+    cli: 'kimi',
+    helpUrl: 'https://kimi.com',
+    idlePatterns: [/\d{1,2}:\d{2}\s+agent$/],
+    busyPatterns: [
+      /[\u2800-\u28FF]/,
+      /🌑|🌔/,
+    ],
   },
 };

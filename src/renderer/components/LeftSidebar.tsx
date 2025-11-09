@@ -227,7 +227,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                           </div>
 
                           <CollapsibleContent asChild>
-                            <div className="ml-7 mt-2 min-w-0 space-y-1">
+                            <div className="ml-3 mt-2 min-w-0 space-y-1">
                               <div className="hidden min-w-0 space-y-1 sm:block">
                                 {typedProject.workspaces?.map((workspace) => {
                                   const isActive = activeWorkspace?.id === workspace.id;
@@ -263,24 +263,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                   );
                                 })}
                               </div>
-                              <button
-                                type="button"
-                                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-white/5"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (onSelectProject && selectedProject?.id !== typedProject.id) {
-                                    onSelectProject(typedProject);
-                                  } else if (!selectedProject) {
-                                    onSelectProject?.(typedProject);
-                                  }
-                                  onCreateWorkspaceForProject?.(typedProject);
-                                }}
-                                disabled={isCreatingWorkspace}
-                                aria-label={`Add workspace to ${typedProject.name}`}
-                              >
-                                <Plus className="h-3 w-3 flex-shrink-0 text-gray-400" aria-hidden />
-                                <span className="truncate">Add workspace</span>
-                              </button>
                             </div>
                           </CollapsibleContent>
                         </Collapsible>
@@ -292,7 +274,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className="border-t border-gray-200 px-2 py-2 dark:border-gray-800 sm:px-4 sm:py-4">
+        <SidebarFooter className="border-t border-gray-200 px-2 py-1 dark:border-gray-800 sm:px-3 sm:py-1.5">
           <SidebarMenu className="w-full">
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -304,7 +286,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                   e.preventDefault();
                   handleGithubProfileClick();
                 }}
-                className={`flex w-full items-center justify-start gap-2 px-2 py-2 text-sm text-muted-foreground focus-visible:outline-none focus-visible:ring-0 ${
+                className={`flex w-full items-center justify-start gap-2 px-2 py-1.5 text-sm text-muted-foreground focus-visible:outline-none focus-visible:ring-0 ${
                   githubProfileUrl
                     ? 'hover:bg-black/5 dark:hover:bg-white/5'
                     : 'cursor-default hover:bg-transparent'

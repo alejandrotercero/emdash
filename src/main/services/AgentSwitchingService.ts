@@ -112,7 +112,7 @@ export class AgentSwitchingService extends EventEmitter {
   getAvailableProviders(): string[] {
     return [
       'codex', 'claude', 'qwen', 'droid', 'gemini',
-      'cursor', 'copilot', 'amp', 'opencode', 'charm', 'auggie'
+      'cursor', 'copilot', 'amp', 'opencode', 'charm', 'auggie', 'kimi'
     ];
   }
 

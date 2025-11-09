@@ -8,6 +8,7 @@ import cursorLogo from "../../assets/images/cursorlogo.png";
 import factoryLogo from "../../assets/images/factorydroid.png";
 import geminiLogo from "../../assets/images/gemini.png";
 import copilotLogo from "../../assets/images/ghcopilot.png";
+import kimiLogo from "../../assets/images/kimi.png";
 import openaiLogo from "../../assets/images/openai.png";
 import opencodeLogo from "../../assets/images/opencode.png";
 import qwenLogo from "../../assets/images/qwen.png";
@@ -109,6 +110,12 @@ const providerConfig = {
 		name: "Auggie",
 		logo: augmentLogo,
 		alt: "Auggie CLI",
+		invertInDark: false,
+	},
+	kimi: {
+		name: "Kimi",
+		logo: kimiLogo,
+		alt: "Kimi CLI",
 		invertInDark: false,
 	},
 } as const;

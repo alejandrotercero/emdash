@@ -12,6 +12,7 @@ import RequirementsNotice from './components/RequirementsNotice';
 import { useToast } from './hooks/use-toast';
 import { useGithubAuth } from './hooks/useGithubAuth';
 import { useTheme } from './hooks/useTheme';
+import { useFont } from './hooks/useFont';
 import { ThemeProvider } from './components/ThemeProvider';
 import emdashLogo from '../assets/images/emdash/emdash_logo.svg';
 import emdashLogoWhite from '../assets/images/emdash/emdash_logo_white.svg';
@@ -214,8 +215,9 @@ const clampRightSidebarSize = (value: number) =>
 const MAIN_PANEL_MIN_SIZE = 30;
 
 const AppContent: React.FC = () => {
-  // Initialize theme on app startup
+  // Initialize theme and font on app startup
   const { effectiveTheme } = useTheme();
+  const { font } = useFont();
 
   const { toast } = useToast();
   const [_, setVersion] = useState<string>('');
@@ -244,6 +246,14 @@ const AppContent: React.FC = () => {
 
   // Show toast on update availability and kick off a background check
   useUpdateNotifier({ checkOnMount: true, onOpenSettings: () => setShowSettings(true) });
+
+  // Initialize font on app startup
+  useEffect(() => {
+    // This will load the saved font from localStorage and apply it
+    // The useFont hook's useEffect will handle loading from storage
+    // We just need to ensure it's called by referencing the font variable
+    void font;
+  }, [font]);
 
   const defaultPanelLayout = React.useMemo(() => {
     const stored = loadPanelSizes(PANEL_LAYOUT_STORAGE_KEY, DEFAULT_PANEL_LAYOUT);
