@@ -6,7 +6,6 @@ import type { CliProviderStatus } from "../types/connections";
 import CliProvidersList, { BASE_CLI_PROVIDERS } from "./CliProvidersList";
 import CustomClaudeCard from "./CustomClaudeCard";
 import IntegrationsCard from "./IntegrationsCard";
-import TelemetryCard from "./TelemetryCard";
 import ThemeCard from "./ThemeCard";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
@@ -108,9 +107,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 				title: "General",
 				description: "",
 				sections: [
-					{ title: "Privacy & Telemetry", render: () => <TelemetryCard /> },
-					{ title: "Version", render: () => <VersionCard /> },
 					{ title: "Theme", render: () => <ThemeCard /> },
+					{ title: "Version", render: () => <VersionCard /> },
 				],
 			},
 			connections: {

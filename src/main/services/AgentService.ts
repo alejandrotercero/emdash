@@ -136,6 +136,10 @@ export class AgentService extends EventEmitter {
 				await execFileAsync(claudePath, ["--version"]);
 				return true;
 			}
+			if (providerId === "kimi") {
+				await execFileAsync("which", ["kimi"]);
+				return true;
+			}
 			return false;
 		} catch {
 			return false;
@@ -147,6 +151,9 @@ export class AgentService extends EventEmitter {
 			return codexService.getInstallationInstructions();
 		if (providerId === "claude") {
 			return `Install Claude Code CLI:\n\n  npm install -g @anthropic-ai/claude-code\n\nThen authenticate once by running:\n\n  claude\n  /login\n\nAfter that, try again.`;
+		}
+		if (providerId === "kimi") {
+			return `Install Kimi CLI:\n\n  npm install -g kimi-cli\n\nThen authenticate and try again.`;
 		}
 		return "";
 	}
@@ -463,6 +470,56 @@ export class AgentService extends EventEmitter {
 					});
 				});
 			}
+			return;
+		}
+
+		if (providerId === "kimi") {
+			const args = [message];
+			const child = spawn("kimi", args, {
+				cwd: worktreePath,
+				stdio: ["ignore", "pipe", "pipe"],
+			});
+			this.processes.set(k, child);
+			console.log("[AgentService] Kimi spawned, PID:", child.pid);
+
+			child.stdout.on("data", (buf) => {
+				const s = buf.toString();
+				this.append(providerId, workspaceId, s);
+				this.emit("agent:output", {
+					providerId,
+					workspaceId,
+					output: s,
+				});
+			});
+			child.stderr.on("data", (buf) => {
+				const s = buf.toString();
+				this.append(providerId, workspaceId, `\n[stderr] ${s}`);
+				this.emit("agent:error", { providerId, workspaceId, error: s });
+			});
+			child.on("close", (code) => {
+				this.append(
+					providerId,
+					workspaceId,
+					`\n[COMPLETE] exit code ${code}\n`,
+				);
+				try {
+					writer.end();
+				} catch {}
+				this.writers.delete(k);
+				this.processes.delete(k);
+				this.emit("agent:complete", {
+					providerId,
+					workspaceId,
+					exitCode: code ?? 0,
+				});
+			});
+			child.on("error", (err) => {
+				this.emit("agent:error", {
+					providerId,
+					workspaceId,
+					error: err.message,
+				});
+			});
 			return;
 		}
 

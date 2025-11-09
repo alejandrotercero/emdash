@@ -146,6 +146,7 @@ const ChatInterface: React.FC<Props> = ({
 					"opencode",
 					"charm",
 					"auggie",
+					"kimi",
 				];
 				const isValidProvider = (p: string | null): boolean => {
 					if (!p) return false;

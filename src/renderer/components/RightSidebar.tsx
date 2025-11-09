@@ -1,8 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import FileChangesPanel from './FileChangesPanel';
 import WorkspaceTerminalPanel from './WorkspaceTerminalPanel';
 import { useRightSidebar } from './ui/right-sidebar';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Button } from './ui/button';
+import { useFileChanges } from '../hooks/useFileChanges';
+import { useCreatePR } from '../hooks/useCreatePR';
+import { Spinner } from './ui/spinner';
 
 export interface RightSidebarWorkspace {
   id: string;
@@ -23,6 +28,19 @@ interface RightSidebarProps extends React.HTMLAttributes<HTMLElement> {
 
 const RightSidebar: React.FC<RightSidebarProps> = ({ workspace, className, ...rest }) => {
   const { collapsed } = useRightSidebar();
+  const [changesCollapsed, setChangesCollapsed] = useState(false);
+
+  // Get file changes data for the summary when collapsed
+  const { fileChanges, refreshChanges } = useFileChanges(workspace?.path || '');
+  const { isCreating: isCreatingPR, createPR } = useCreatePR();
+  const totalChanges = fileChanges.reduce(
+    (acc, change) => ({
+      additions: acc.additions + change.additions,
+      deletions: acc.deletions + change.deletions,
+    }),
+    { additions: 0, deletions: 0 }
+  );
+  const hasChanges = fileChanges.length > 0;
 
   return (
     <aside
@@ -38,30 +56,97 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ workspace, className, ...re
       <div className="flex h-full w-full min-w-0 flex-col">
         {workspace ? (
           <div className="flex h-full flex-col">
-            <FileChangesPanel
-              workspaceId={workspace.path}
-              className="min-h-0 flex-1 border-b border-border"
+            {/* Collapsible File Changes Panel */}
+            <div className={cn("flex flex-col", changesCollapsed ? "min-h-0" : "min-h-0 flex-none border-b border-border")}>
+              <div className="flex items-center justify-between bg-gray-50 px-3 py-1.5 dark:bg-gray-900">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setChangesCollapsed(!changesCollapsed)}
+                    className="h-6 w-6 p-0 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    title={changesCollapsed ? "Show changes" : "Hide changes"}
+                  >
+                    {changesCollapsed ? (
+                      <ChevronRight className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </Button>
+                  {hasChanges ? (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {fileChanges.length} files changed
+                      </span>
+                      <div className="flex items-center space-x-1 text-xs">
+                        <span className="font-medium text-green-600 dark:text-green-400">
+                          +{totalChanges.additions}
+                        </span>
+                        <span className="text-gray-400">•</span>
+                        <span className="font-medium text-red-600 dark:text-red-400">
+                          -{totalChanges.deletions}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">No changes</span>
+                  )}
+                </div>
+                {hasChanges && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-5 border-gray-200 px-1.5 text-[11px] text-gray-700 dark:border-gray-700 dark:text-gray-200"
+                    disabled={isCreatingPR}
+                    title="Commit all changes and create a pull request"
+                    onClick={async () => {
+                      await createPR({
+                        workspacePath: workspace?.path || '',
+                        onSuccess: async () => {
+                          await refreshChanges();
+                        },
+                      });
+                    }}
+                  >
+                    {isCreatingPR ? <Spinner size="sm" /> : 'Create PR'}
+                  </Button>
+                )}
+              </div>
+              {!changesCollapsed && (
+                <FileChangesPanel
+                  workspaceId={workspace.path}
+                  className="min-h-0 flex-1"
+                />
+              )}
+            </div>
+            
+            {/* Terminal Panel - expands to fill remaining space when changes are collapsed */}
+            <WorkspaceTerminalPanel 
+              workspace={workspace} 
+              className={cn("min-h-0", changesCollapsed ? "flex-1" : "flex-1")} 
             />
-            <WorkspaceTerminalPanel workspace={workspace} className="min-h-0 flex-1" />
           </div>
         ) : (
           <div className="flex h-full flex-col text-sm text-muted-foreground">
-            <div className="flex flex-1 flex-col border-b border-border bg-background">
-              <div className="border-b border-border bg-gray-50 px-3 py-2 text-sm font-medium text-foreground dark:bg-gray-900">
-                <span className="whitespace-nowrap">Changes</span>
+            {/* Empty state for changes */}
+            <div className="flex flex-col border-b border-border">
+              <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 dark:bg-gray-900">
+                <ChevronRight className="h-4 w-4" />
+                <span className="text-sm font-medium text-foreground">Changes</span>
               </div>
-              <div className="flex flex-1 items-center justify-center px-4 text-center">
-                <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+              <div className="flex flex-1 items-center justify-center px-4 py-4 text-center">
+                <span className="overflow-hidden text-ellipsis whitespace-nowrap text-sm">
                   Select a workspace to review file changes.
                 </span>
               </div>
             </div>
-            <div className="flex flex-1 flex-col border-t border-border bg-background">
-              <div className="border-b border-border bg-gray-50 px-3 py-2 text-sm font-medium text-foreground dark:bg-gray-900">
+            {/* Empty state for terminal */}
+            <div className="flex flex-1 flex-col bg-background">
+              <div className="border-b border-border bg-gray-50 px-3 py-1.5 text-sm font-medium text-foreground dark:bg-gray-900">
                 <span className="whitespace-nowrap">Terminal</span>
               </div>
-              <div className="flex flex-1 items-center justify-center px-4 text-center">
-                <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+              <div className="flex flex-1 items-center justify-center px-4 py-4 text-center">
+                <span className="overflow-hidden text-ellipsis whitespace-nowrap text-sm">
                   Select a workspace to open its terminal.
                 </span>
               </div>

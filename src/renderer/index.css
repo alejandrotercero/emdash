@@ -83,10 +83,27 @@
 @layer base {
 	* {
 		@apply border-border;
-		font-family: "Rawest", "system-ui", "-apple-system";
+		font-family: var(--ui-font-family, "Rawest"), "system-ui", "-apple-system", sans-serif;
 	}
 	body {
 		@apply bg-background text-foreground;
+	}
+
+	/* Font family utilities */
+	.font-rawest { font-family: "Rawest", "system-ui", "-apple-system", sans-serif !important; }
+	.font-system { font-family: "system-ui", "-apple-system", sans-serif !important; }
+	.font-inter { font-family: "Inter", "system-ui", sans-serif !important; }
+	.font-sfpro { font-family: "-apple-system", "BlinkMacSystemFont", "SF Pro Display", "SF Pro Text", sans-serif !important; }
+	.font-roboto { font-family: "Roboto", "system-ui", sans-serif !important; }
+	.font-helvetica { font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif !important; }
+	.font-segoe { font-family: "Segoe UI", "system-ui", sans-serif !important; }
+	.font-ubuntu { font-family: "Ubuntu", "system-ui", sans-serif !important; }
+	.font-cantarell { font-family: "Cantarell", "system-ui", sans-serif !important; }
+	.font-apple { font-family: "-apple-system", "BlinkMacSystemFont", sans-serif !important; }
+
+	/* Dynamic font via CSS custom property */
+	:root {
+		--ui-font-family: "Rawest";
 	}
 
 	/* Scrollbar styles for light and dark mode */

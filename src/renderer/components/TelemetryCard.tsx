@@ -64,23 +64,6 @@ const TelemetryCard: React.FC = () => {
           aria-label="Enable anonymous telemetry"
         />
       </div>
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="group gap-2"
-          onClick={() => window.electronAPI.openExternal('https://posthog.com/product')}
-        >
-          <span className="transition-colors group-hover:text-foreground">About PostHog</span>
-          <span
-            aria-hidden="true"
-            className="text-xs text-muted-foreground transition-colors group-hover:text-foreground"
-          >
-            ↗
-          </span>
-        </Button>
-      </div>
     </div>
   );
 };
