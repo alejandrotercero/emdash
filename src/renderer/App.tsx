@@ -193,6 +193,7 @@ interface Workspace {
   status: 'active' | 'idle' | 'running';
   agentId?: string;
   metadata?: WorkspaceMetadata | null;
+  worktreeType?: 'worktree' | 'main';
 }
 
 const TITLEBAR_HEIGHT = '36px';
@@ -726,6 +727,7 @@ const AppContent: React.FC = () => {
         path: worktree.path,
         status: 'idle',
         metadata: workspaceMetadata,
+        worktreeType: worktreeType,
       };
 
       // Save workspace to database
@@ -887,6 +889,11 @@ const AppContent: React.FC = () => {
 
   const handleDeleteWorkspace = async (targetProject: Project, workspace: Workspace) => {
     try {
+      // Safety check: don't try to delete main branch worktrees (they can't be removed via git worktree remove)
+      if (workspace.worktreeType === 'main') {
+        throw new Error('Cannot delete a main branch workspace. Use "Remove" instead.');
+      }
+
       try {
         // Clear initial prompt sent flags (legacy and per-provider) if present
         const { initialPromptSentKey } = await import('./lib/keys');
@@ -981,6 +988,59 @@ const AppContent: React.FC = () => {
           error instanceof Error
             ? error.message
             : 'Could not delete workspace. Check the console for details.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleRemoveWorkspace = async (
+    targetProject: Project,
+    workspace: Workspace
+  ): Promise<void> => {
+    try {
+      // For main branch workspaces, only remove from database/UI, don't delete from disk
+      const result = await window.electronAPI.deleteWorkspace(workspace.id);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to remove workspace');
+      }
+
+      setProjects((prev) =>
+        prev.map((project) =>
+          project.id === targetProject.id
+            ? {
+                ...project,
+                workspaces: (project.workspaces || []).filter((w) => w.id !== workspace.id),
+              }
+            : project
+        )
+      );
+
+      setSelectedProject((prev) =>
+        prev && prev.id === targetProject.id
+          ? {
+              ...prev,
+              workspaces: (prev.workspaces || []).filter((w) => w.id !== workspace.id),
+            }
+          : prev
+      );
+
+      if (activeWorkspace?.id === workspace.id) {
+        setActiveWorkspace(null);
+      }
+
+      toast({
+        title: 'Workspace removed',
+        description: `"${workspace.name}" was removed from the app. Files on disk were not changed.`,
+      });
+    } catch (error) {
+      const { log } = await import('./lib/logger');
+      log.error('Failed to remove workspace:', error as any);
+      toast({
+        title: 'Error',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Could not remove workspace. Check the console for details.',
         variant: 'destructive',
       });
     }
@@ -1105,6 +1165,7 @@ const AppContent: React.FC = () => {
               activeWorkspace={activeWorkspace}
               onSelectWorkspace={handleSelectWorkspace}
               onDeleteWorkspace={handleDeleteWorkspace}
+              onRemoveWorkspace={handleRemoveWorkspace}
               isCreatingWorkspace={isCreatingWorkspace}
               onDeleteProject={handleDeleteProject}
             />
@@ -1207,6 +1268,7 @@ const AppContent: React.FC = () => {
                   onCreateWorkspaceForProject={handleStartCreateWorkspaceFromSidebar}
                   isCreatingWorkspace={isCreatingWorkspace}
                   onDeleteWorkspace={handleDeleteWorkspace}
+                  onRemoveWorkspace={handleRemoveWorkspace}
                 />
               </ResizablePanel>
               <ResizableHandle

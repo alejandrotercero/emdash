@@ -1,5 +1,5 @@
 import React from 'react';
-import { GitBranch, Bot } from 'lucide-react';
+import { GitBranch, Bot, Archive } from 'lucide-react';
 import WorkspaceDeleteButton from './WorkspaceDeleteButton';
 import { useWorkspaceChanges } from '../hooks/useWorkspaceChanges';
 import { ChangesBadge } from './WorkspaceChanges';
@@ -14,15 +14,22 @@ interface Workspace {
   path: string;
   status: 'active' | 'idle' | 'running';
   agentId?: string;
+  worktreeType?: 'worktree' | 'main';
 }
 
 interface WorkspaceItemProps {
   workspace: Workspace;
   index?: number; // For keyboard shortcuts (1-9)
   onDelete?: () => void | Promise<void>;
+  onRemove?: () => void | Promise<void>;
 }
 
-export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace, index, onDelete }) => {
+export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({
+  workspace,
+  index,
+  onDelete,
+  onRemove,
+}) => {
   const { totalAdditions, totalDeletions, isLoading } = useWorkspaceChanges(
     workspace.path,
     workspace.id
@@ -53,7 +60,7 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace, index, 
       <div className="flex flex-shrink-0 items-center space-x-2">
         {!isLoading && (totalAdditions > 0 || totalDeletions > 0) ? (
           <ChangesBadge additions={totalAdditions} deletions={totalDeletions} />
-        ) : pr ? (
+        ) : pr && workspace.worktreeType !== 'main' ? (
           <div className="flex items-center gap-1">
             {(pr.state === 'MERGED' || pr.state === 'CLOSED') && onDelete ? (
               <WorkspaceDeleteButton
@@ -78,6 +85,26 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace, index, 
               {pr.isDraft ? 'draft' : pr.state.toLowerCase()}
             </span>
           </div>
+        ) : null}
+
+        {/* Show Archive button for main branch workspaces */}
+        {workspace.worktreeType === 'main' && onRemove ? (
+          <button
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                setIsDeleting(true);
+                await onRemove();
+              } finally {
+                setIsDeleting(false);
+              }
+            }}
+            className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            title="Remove from app (files not deleted)"
+            aria-label={`Remove workspace ${workspace.name}`}
+          >
+            <Archive className="h-4 w-4" />
+          </button>
         ) : null}
       </div>
     </div>

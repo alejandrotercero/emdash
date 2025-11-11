@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from './ui/button';
-import { GitBranch, Plus, Loader2 } from 'lucide-react';
+import { GitBranch, Plus, Loader2, Archive } from 'lucide-react';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from './ui/breadcrumb';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
@@ -54,12 +54,14 @@ function WorkspaceRow({
   active,
   onClick,
   onDelete,
+  onRemove,
 }: {
   ws: Workspace;
   project: Project;
   active: boolean;
   onClick: () => void;
   onDelete: () => void | Promise<void>;
+  onRemove: () => void | Promise<void>;
 }) {
   const [isRunning, setIsRunning] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -153,8 +155,25 @@ function WorkspaceRow({
           />
         )}
 
-        {/* Only show delete button for worktree workspaces, not main branch workspaces */}
-        {ws.worktreeType !== 'main' && (
+        {/* Show delete button for worktree workspaces, archive button for main branch workspaces */}
+        {ws.worktreeType === 'main' ? (
+          <button
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                setIsDeleting(true);
+                await onRemove();
+              } finally {
+                setIsDeleting(false);
+              }
+            }}
+            className="inline-flex items-center justify-center rounded p-2 text-muted-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-0"
+            title="Remove from app (files not deleted)"
+            aria-label={`Remove workspace ${ws.name}`}
+          >
+            <Archive className="h-4 w-4" />
+          </button>
+        ) : (
           <WorkspaceDeleteButton
             workspaceName={ws.name}
             onConfirm={async () => {
@@ -182,6 +201,7 @@ interface ProjectMainViewProps {
   activeWorkspace: Workspace | null;
   onSelectWorkspace: (workspace: Workspace) => void;
   onDeleteWorkspace: (project: Project, workspace: Workspace) => void | Promise<void>;
+  onRemoveWorkspace: (project: Project, workspace: Workspace) => void | Promise<void>;
   isCreatingWorkspace?: boolean;
   onDeleteProject?: (project: Project) => void | Promise<void>;
 }
@@ -192,6 +212,7 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
   activeWorkspace,
   onSelectWorkspace,
   onDeleteWorkspace,
+  onRemoveWorkspace,
   isCreatingWorkspace = false,
   onDeleteProject,
 }) => {
@@ -278,6 +299,7 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
                     active={activeWorkspace?.id === ws.id}
                     onClick={() => onSelectWorkspace(ws)}
                     onDelete={() => onDeleteWorkspace(project, ws)}
+                    onRemove={() => onRemoveWorkspace(project, ws)}
                   />
                 ))}
               </div>

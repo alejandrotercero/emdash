@@ -41,6 +41,7 @@ interface Workspace {
   path: string;
   status: 'active' | 'idle' | 'running';
   agentId?: string;
+  worktreeType?: 'worktree' | 'main';
 }
 
 const SidebarToggleButton: React.FC = () => {
@@ -77,6 +78,7 @@ interface LeftSidebarProps {
   onCreateWorkspaceForProject?: (project: Project) => void;
   isCreatingWorkspace?: boolean;
   onDeleteWorkspace?: (project: Project, workspace: Workspace) => void | Promise<void>;
+  onRemoveWorkspace?: (project: Project, workspace: Workspace) => void | Promise<void>;
 }
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -95,6 +97,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   onCreateWorkspaceForProject,
   isCreatingWorkspace,
   onDeleteWorkspace,
+  onRemoveWorkspace,
 }) => {
   const { open, isMobile, setOpen } = useSidebar();
 
@@ -256,6 +259,11 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                         onDelete={
                                           onDeleteWorkspace
                                             ? () => onDeleteWorkspace(typedProject, workspace)
+                                            : undefined
+                                        }
+                                        onRemove={
+                                          onRemoveWorkspace
+                                            ? () => onRemoveWorkspace(typedProject, workspace)
                                             : undefined
                                         }
                                       />

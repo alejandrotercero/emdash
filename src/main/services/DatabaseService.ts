@@ -3,6 +3,7 @@ import { existsSync, renameSync } from "fs";
 import { join } from "path";
 import type sqlite3Type from "sqlite3";
 import { promisify } from "util";
+import { log } from "../lib/logger";
 
 export interface Project {
 	id: string;
@@ -208,6 +209,19 @@ export class DatabaseService {
 			) {
 				throw error;
 			}
+		}
+
+		// Migrate existing workspaces: set worktree_type based on path
+		// Main branch workspaces are those that don't contain '/worktrees/' in their path
+		try {
+			await runAsync(`
+				UPDATE workspaces
+				SET worktree_type = 'main'
+				WHERE worktree_type IS NULL
+				AND path NOT LIKE '%/worktrees/%'
+			`);
+		} catch (error) {
+			log.warn('Failed to migrate worktree_type for existing workspaces:', error);
 		}
 
 		try {

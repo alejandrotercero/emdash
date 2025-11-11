@@ -20,6 +20,7 @@ export interface RightSidebarWorkspace {
   projectGitInfo?: {
     isGitRepo: boolean;
   };
+  worktreeType?: 'worktree' | 'main';
 }
 
 interface RightSidebarProps extends React.HTMLAttributes<HTMLElement> {
@@ -92,7 +93,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ workspace, className, ...re
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100">No changes</span>
                   )}
                 </div>
-                {hasChanges && (
+                {hasChanges && workspace?.worktreeType !== 'main' && (
                   <Button
                     variant="outline"
                     size="sm"
