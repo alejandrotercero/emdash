@@ -34,23 +34,32 @@ This document outlines the comprehensive upgrade plan for the emdash multi-agent
 - ✅ **Frontend UI** - Add main branch option to workspace creation modal
 - ✅ **Workspace creation flow** - Allow direct main branch work without task name requirement
 - ✅ **UI indicators** - Green "Main Branch" badge to distinguish from worktree workspaces
-- ✅ **Workspace management** - Main branch workspaces cannot be deleted and don't show PR badges
+- ✅ **Archive button** - Show Archive icon for main branch workspace removal (UI/database only)
+- ✅ **PR UI hidden** - PR badges and Create PR button hidden for main branch workspaces
 - ✅ **IPC integration** - Added worktreeCreateMainBranch handler to preload.ts
-- ✅ **Safety features** - Delete button and PR display conditionally hidden for main branch workspaces
+- ✅ **Safety check** - handleDeleteWorkspace prevents main branch worktree deletion
+- ✅ **Database migration** - Auto-detect and migrate existing main branch workspaces
+- ✅ **Type safety** - worktreeType field added to Workspace interface
 
 **Files Modified:**
 - `src/renderer/components/WorkspaceModal.tsx` - Added main branch option and conditional task name field
-- `src/renderer/components/ProjectMainView.tsx` - Added workspace type indicators and management logic
+- `src/renderer/components/ProjectMainView.tsx` - Added workspace type indicators, Archive icon, and management logic
+- `src/renderer/components/WorkspaceItem.tsx` - Added Archive icon for main branch workspaces
+- `src/renderer/components/LeftSidebar.tsx` - Added onRemoveWorkspace prop support
+- `src/renderer/components/RightSidebar.tsx` - Hide Create PR button for main branch workspaces
+- `src/renderer/App.tsx` - Added worktreeType field, handleRemoveWorkspace, safety check, and workspace creation logic
+- `src/main/services/DatabaseService.ts` - Added database migration for worktreeType and log import
 - `src/main/preload.ts` - Added worktreeCreateMainBranch IPC exposure
 - `src/renderer/types/electron-api.d.ts` - Added type definitions for main branch creation
-- `src/renderer/App.tsx` - Updated workspace creation to use main branch logic
 
 **Key Features:**
 - **No task name required** for main branch workspaces
 - **Visual distinction** with green "Main Branch" badge
-- **Deletion protection** - Main branch workspaces cannot be deleted
-- **No PR workflow** - Pull request badges hidden for main branch
+- **Archive icon** instead of Delete button for safe removal
+- **Remove from app only** - Removes from UI/database without deleting files
+- **No PR workflow** - Pull request badges and Create PR button hidden for main branch
 - **Same AI functionality** - All agent features work on main branch
+- **Safety check** - Delete button prevents main branch worktree deletion (git error protection)
 
 ### 3. Hierarchical Setup Commands 🔄 IN PROGRESS
 **Original Request:** Be able to run shell commands before starting as an optional "setup commands"
@@ -135,7 +144,7 @@ This document outlines the comprehensive upgrade plan for the emdash multi-agent
 - ✅ **Creation UI** - Main branch option in workspace creation modal
 - ✅ **No task name requirement** - Simplified creation flow for main branch workspaces
 - ✅ **Visual distinction** - Green "Main" badge for easy identification
-- ✅ **Deletion protection** - Main workspaces cannot be deleted
+- ✅ **Archive icon removal** - Main branch workspaces removed via Archive icon (UI/database only)
 - ✅ **PR workflow exclusion** - No pull request badges for main workspaces
 - ✅ **Type safety** - Added worktreeType field to Workspace interface
 
@@ -236,6 +245,12 @@ This document outlines the comprehensive upgrade plan for the emdash multi-agent
 
 ---
 
-**Last Updated:** 2025-11-07
+**Last Updated:** 2025-11-10
 **Status:** 82% Complete (9/11 major features implemented)
 **Next Priority:** Complete frontend UI integration for setup commands and agent switching
+
+**Recent Fixes (2025-11-10):**
+- Fixed main branch workspace deletion issue (Archive icon, UI-only removal)
+- Added database migration for existing main branch workspaces
+- Prevented git error: "fatal: '...' is a main working tree"
+- Hide PR badges and Create PR button for main branch workspaces
