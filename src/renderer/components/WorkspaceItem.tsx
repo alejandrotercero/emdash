@@ -50,6 +50,11 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({
           )}
           <span className="block truncate text-xs font-medium text-foreground">{workspace.name}</span>
           {workspace.agentId && <Bot className="h-3 w-3 flex-shrink-0 text-purple-500" />}
+          {workspace.worktreeType === 'main' && (
+            <span className="text-[9px] px-1 py-0.5 rounded border border-green-200 text-green-700 bg-green-50 dark:border-green-800 dark:text-green-300 dark:bg-green-900/20 truncate max-w-[60px]" title={workspace.branch}>
+              {workspace.branch}
+            </span>
+          )}
         </div>
         {index && index <= 9 && (
           <div className="flex items-center gap-1 mt-0.5 ml-5">

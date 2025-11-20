@@ -217,7 +217,7 @@ export class DatabaseService {
 			await runAsync(`
 				UPDATE workspaces
 				SET worktree_type = 'main'
-				WHERE worktree_type IS NULL
+				WHERE worktree_type = 'worktree'
 				AND path NOT LIKE '%/worktrees/%'
 			`);
 		} catch (error) {

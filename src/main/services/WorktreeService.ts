@@ -146,17 +146,6 @@ export class WorktreeService {
 
       log.info(`Creating main branch workspace: ${workspaceName} on branch ${currentBranch}`);
 
-      // Ensure we're on the main branch or current branch
-      try {
-        const defaultBranch = await this.getDefaultBranch(projectPath);
-        if (currentBranch !== defaultBranch) {
-          log.info(`Switching to default branch: ${defaultBranch}`);
-          await execFileAsync('git', ['checkout', defaultBranch], { cwd: projectPath });
-        }
-      } catch (branchError) {
-        log.warn('Failed to switch to default branch, using current branch:', branchError);
-      }
-
       // Ensure codex logs are ignored
       this.ensureCodexLogIgnored(projectPath);
 
@@ -254,6 +243,12 @@ export class WorktreeService {
 
       if (!pathToRemove) {
         throw new Error('Worktree path not provided');
+      }
+
+      // Safety check: prevent deletion of main project directory
+      // Main branch workspaces have paths that don't contain '/worktrees/'
+      if (!pathToRemove.includes('/worktrees/')) {
+        throw new Error('Cannot remove main branch workspace via worktree delete. Use "Remove" to untrack from app without deleting files.');
       }
 
       // Remove the worktree directory via git first
