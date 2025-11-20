@@ -189,6 +189,7 @@ interface Workspace {
   id: string;
   name: string;
   branch: string;
+  baseBranch?: string; // Branch this workspace was created from (for PR targeting)
   path: string;
   status: 'active' | 'idle' | 'running';
   agentId?: string;
@@ -724,6 +725,7 @@ const AppContent: React.FC = () => {
         id: worktree.id,
         name: workspaceName,
         branch: worktree.branch,
+        baseBranch: worktree.baseBranch,
         path: worktree.path,
         status: 'idle',
         metadata: workspaceMetadata,

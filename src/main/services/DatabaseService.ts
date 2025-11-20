@@ -27,6 +27,7 @@ export interface Workspace {
 	projectId: string;
 	name: string;
 	branch: string;
+	baseBranch?: string; // Branch this workspace was created from (for PR targeting)
 	path: string;
 	status: "active" | "idle" | "running";
 	agentId?: string;
@@ -257,6 +258,18 @@ export class DatabaseService {
 			}
 		}
 
+		// Add base_branch column to track original branch for PR targeting
+		try {
+			await runAsync(`ALTER TABLE workspaces ADD COLUMN base_branch TEXT`);
+		} catch (error) {
+			if (
+				!(error instanceof Error) ||
+				!/duplicate column name/i.test(error.message)
+			) {
+				throw error;
+			}
+		}
+
 		// Create conversations table
 		await runAsync(`
       CREATE TABLE IF NOT EXISTS conversations (
@@ -435,14 +448,15 @@ export class DatabaseService {
 			this.db!.run(
 				`
         INSERT OR REPLACE INTO workspaces
-        (id, project_id, name, branch, path, status, agent_id, metadata, worktree_type, git_pull_enabled, last_git_check, setup_commands, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        (id, project_id, name, branch, base_branch, path, status, agent_id, metadata, worktree_type, git_pull_enabled, last_git_check, setup_commands, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `,
 				[
 					workspace.id,
 					workspace.projectId,
 					workspace.name,
 					workspace.branch,
+					workspace.baseBranch || null,
 					workspace.path,
 					workspace.status,
 					workspace.agentId || null,
@@ -473,7 +487,7 @@ export class DatabaseService {
 
 		let query = `
       SELECT
-        id, project_id, name, branch, path, status, agent_id, metadata,
+        id, project_id, name, branch, base_branch, path, status, agent_id, metadata,
         worktree_type, git_pull_enabled, last_git_check, setup_commands,
         created_at, updated_at
       FROM workspaces
@@ -512,6 +526,7 @@ export class DatabaseService {
 							projectId: row.project_id,
 							name: row.name,
 							branch: row.branch,
+							baseBranch: row.base_branch || undefined,
 							path: row.path,
 							status: row.status,
 							agentId: row.agent_id,

@@ -34,6 +34,7 @@ interface Workspace {
   id: string;
   name: string;
   branch: string;
+  baseBranch?: string;
   path: string;
   status: 'active' | 'idle' | 'running';
   agentId?: string;

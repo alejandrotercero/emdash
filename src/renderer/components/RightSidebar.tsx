@@ -13,6 +13,7 @@ export interface RightSidebarWorkspace {
   id: string;
   name: string;
   branch: string;
+  baseBranch?: string;
   path: string;
   status: 'active' | 'idle' | 'running';
   agentId?: string;
@@ -103,6 +104,9 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ workspace, className, ...re
                     onClick={async () => {
                       await createPR({
                         workspacePath: workspace?.path || '',
+                        prOptions: {
+                          base: workspace?.baseBranch, // Target the original branch
+                        },
                         onSuccess: async () => {
                           await refreshChanges();
                         },
