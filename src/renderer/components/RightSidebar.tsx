@@ -7,6 +7,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { useFileChanges } from '../hooks/useFileChanges';
 import { useCreatePR } from '../hooks/useCreatePR';
+import { usePrStatus } from '../hooks/usePrStatus';
 import { Spinner } from './ui/spinner';
 
 export interface RightSidebarWorkspace {
@@ -34,6 +35,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ workspace, className, ...re
   // Get file changes data for the summary when collapsed
   const { fileChanges, refreshChanges } = useFileChanges(workspace?.path || '');
   const { isCreating: isCreatingPR, createPR } = useCreatePR();
+  const { pr, refresh: refreshPr } = usePrStatus(workspace?.path || '');
   const totalChanges = fileChanges.reduce(
     (acc, change) => ({
       additions: acc.additions + change.additions,
@@ -93,24 +95,39 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ workspace, className, ...re
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100">No changes</span>
                   )}
                 </div>
-                {hasChanges && workspace?.worktreeType !== 'main' && (
+                {pr ? (
                   <Button
                     variant="outline"
                     size="sm"
                     className="h-5 border-gray-200 px-1.5 text-[11px] text-gray-700 dark:border-gray-700 dark:text-gray-200"
-                    disabled={isCreatingPR}
-                    title="Commit all changes and create a pull request"
-                    onClick={async () => {
-                      await createPR({
-                        workspacePath: workspace?.path || '',
-                        onSuccess: async () => {
-                          await refreshChanges();
-                        },
-                      });
+                    title="Open pull request in browser"
+                    onClick={() => {
+                      window.electronAPI.openExternal(pr.url);
                     }}
                   >
-                    {isCreatingPR ? <Spinner size="sm" /> : 'Create PR'}
+                    Open PR
                   </Button>
+                ) : (
+                  hasChanges && workspace?.worktreeType !== 'main' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-5 border-gray-200 px-1.5 text-[11px] text-gray-700 dark:border-gray-700 dark:text-gray-200"
+                      disabled={isCreatingPR}
+                      title="Commit all changes and create a pull request"
+                      onClick={async () => {
+                        await createPR({
+                          workspacePath: workspace?.path || '',
+                          onSuccess: async () => {
+                            await refreshChanges();
+                            await refreshPr();
+                          },
+                        });
+                      }}
+                    >
+                      {isCreatingPR ? <Spinner size="sm" /> : 'Create PR'}
+                    </Button>
+                  )
                 )}
               </div>
               {!changesCollapsed && (
