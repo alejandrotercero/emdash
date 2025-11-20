@@ -11,6 +11,7 @@ export interface WorktreeInfo {
   id: string;
   name: string;
   branch: string;
+  baseBranch: string; // Branch this workspace was created from (for PR targeting)
   path: string;
   projectId: string;
   status: 'active' | 'paused' | 'completed' | 'error';
@@ -51,13 +52,19 @@ export class WorktreeService {
     projectId: string
   ): Promise<WorktreeInfo> {
     try {
+      // Get current branch BEFORE creating worktree - this is the base branch for PRs
+      const { stdout: currentBranchOutput } = await execFileAsync('git', ['branch', '--show-current'], {
+        cwd: projectPath
+      });
+      const baseBranch = currentBranchOutput.trim();
+
       const sluggedName = this.slugify(workspaceName);
       const timestamp = Date.now();
       const branchName = `agent/${sluggedName}-${timestamp}`;
       const worktreePath = path.join(projectPath, '..', `worktrees/${sluggedName}-${timestamp}`);
       const worktreeId = this.stableIdFromPath(worktreePath);
 
-      log.info(`Creating worktree: ${branchName} -> ${worktreePath}`);
+      log.info(`Creating worktree: ${branchName} -> ${worktreePath} (base: ${baseBranch})`);
 
       // Check if worktree path already exists
       if (fs.existsSync(worktreePath)) {
@@ -96,6 +103,7 @@ export class WorktreeService {
         id: worktreeId,
         name: workspaceName,
         branch: branchName,
+        baseBranch,
         path: worktreePath,
         projectId,
         status: 'active',
@@ -146,17 +154,6 @@ export class WorktreeService {
 
       log.info(`Creating main branch workspace: ${workspaceName} on branch ${currentBranch}`);
 
-      // Ensure we're on the main branch or current branch
-      try {
-        const defaultBranch = await this.getDefaultBranch(projectPath);
-        if (currentBranch !== defaultBranch) {
-          log.info(`Switching to default branch: ${defaultBranch}`);
-          await execFileAsync('git', ['checkout', defaultBranch], { cwd: projectPath });
-        }
-      } catch (branchError) {
-        log.warn('Failed to switch to default branch, using current branch:', branchError);
-      }
-
       // Ensure codex logs are ignored
       this.ensureCodexLogIgnored(projectPath);
 
@@ -164,6 +161,7 @@ export class WorktreeService {
         id: worktreeId,
         name: workspaceName,
         branch: currentBranch,
+        baseBranch: currentBranch, // For main branch workspaces, base = current branch
         path: projectPath,
         projectId,
         status: 'active',
@@ -220,6 +218,7 @@ export class WorktreeService {
               id: this.stableIdFromPath(worktreePath),
               name: path.basename(worktreePath),
               branch,
+              baseBranch: '', // Unknown for discovered worktrees
               path: worktreePath,
               projectId: path.basename(projectPath),
               status: 'active',
@@ -254,6 +253,12 @@ export class WorktreeService {
 
       if (!pathToRemove) {
         throw new Error('Worktree path not provided');
+      }
+
+      // Safety check: prevent deletion of main project directory
+      // Main branch workspaces have paths that don't contain '/worktrees/'
+      if (!pathToRemove.includes('/worktrees/')) {
+        throw new Error('Cannot remove main branch workspace via worktree delete. Use "Remove" to untrack from app without deleting files.');
       }
 
       // Remove the worktree directory via git first
@@ -440,6 +445,12 @@ export class WorktreeService {
     projectId: string,
     options?: { worktreePath?: string }
   ): Promise<WorktreeInfo> {
+    // Get current branch BEFORE creating worktree - this is the base branch for PRs
+    const { stdout: currentBranchOutput } = await execFileAsync('git', ['branch', '--show-current'], {
+      cwd: projectPath
+    });
+    const baseBranch = currentBranchOutput.trim();
+
     const normalizedName = workspaceName || branchName.replace(/\//g, '-');
     const sluggedName = this.slugify(normalizedName) || 'workspace';
     const targetPath =
@@ -476,6 +487,7 @@ export class WorktreeService {
       id: this.stableIdFromPath(worktreePath),
       name: normalizedName,
       branch: branchName,
+      baseBranch,
       path: worktreePath,
       projectId,
       status: 'active',

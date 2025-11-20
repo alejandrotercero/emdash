@@ -14,6 +14,7 @@ export interface RightSidebarWorkspace {
   id: string;
   name: string;
   branch: string;
+  baseBranch?: string;
   path: string;
   status: 'active' | 'idle' | 'running';
   agentId?: string;
@@ -100,9 +101,18 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ workspace, className, ...re
                     variant="outline"
                     size="sm"
                     className="h-5 border-gray-200 px-1.5 text-[11px] text-gray-700 dark:border-gray-700 dark:text-gray-200"
-                    title="Open pull request in browser"
-                    onClick={() => {
-                      window.electronAPI.openExternal(pr.url);
+                    disabled={isCreatingPR}
+                    title="Commit all changes and create a pull request"
+                    onClick={async () => {
+                      await createPR({
+                        workspacePath: workspace?.path || '',
+                        prOptions: {
+                          base: workspace?.baseBranch, // Target the original branch
+                        },
+                        onSuccess: async () => {
+                          await refreshChanges();
+                        },
+                      });
                     }}
                   >
                     Open PR

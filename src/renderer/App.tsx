@@ -189,6 +189,7 @@ interface Workspace {
   id: string;
   name: string;
   branch: string;
+  baseBranch?: string; // Branch this workspace was created from (for PR targeting)
   path: string;
   status: 'active' | 'idle' | 'running';
   agentId?: string;
@@ -724,6 +725,7 @@ const AppContent: React.FC = () => {
         id: worktree.id,
         name: workspaceName,
         branch: worktree.branch,
+        baseBranch: worktree.baseBranch,
         path: worktree.path,
         status: 'idle',
         metadata: workspaceMetadata,
@@ -890,7 +892,8 @@ const AppContent: React.FC = () => {
   const handleDeleteWorkspace = async (targetProject: Project, workspace: Workspace) => {
     try {
       // Safety check: don't try to delete main branch worktrees (they can't be removed via git worktree remove)
-      if (workspace.worktreeType === 'main') {
+      // Check both worktreeType and path to be extra safe
+      if (workspace.worktreeType === 'main' || !workspace.path.includes('/worktrees/')) {
         throw new Error('Cannot delete a main branch workspace. Use "Remove" instead.');
       }
 

@@ -34,6 +34,7 @@ interface Workspace {
   id: string;
   name: string;
   branch: string;
+  baseBranch?: string;
   path: string;
   status: 'active' | 'idle' | 'running';
   agentId?: string;
@@ -111,7 +112,7 @@ function WorkspaceRow({
           <div className="text-base font-medium leading-tight tracking-tight">{ws.name}</div>
           {ws.worktreeType === 'main' && (
             <Badge variant="outline" className="text-xs px-1.5 py-0.5 h-auto border-green-200 text-green-700 bg-green-50 dark:border-green-800 dark:text-green-300 dark:bg-green-900/20">
-              Main
+              {ws.branch}
             </Badge>
           )}
         </div>
