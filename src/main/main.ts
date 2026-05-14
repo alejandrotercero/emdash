@@ -85,7 +85,11 @@ app.whenReady().then(async () => {
 // App lifecycle handlers
 registerAppLifecycle();
 
-// Graceful shutdown
-app.on('before-quit', () => {
-  // App shutdown cleanup
+// Graceful shutdown: close PGlite to flush WAL to disk
+app.on('before-quit', async () => {
+  try {
+    await databaseService.close();
+  } catch {
+    // Non-critical: PGlite will recover on next startup
+  }
 });

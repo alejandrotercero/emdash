@@ -111,6 +111,13 @@ const CLI_DEFINITIONS: CliDefinition[] = [
     args: ['--version'],
     docUrl: 'https://docs.augmentcode.com/cli/overview',
   },
+  {
+    id: 'kimi',
+    name: 'Kimi',
+    commands: ['kimi'],
+    args: ['--version'],
+    docUrl: 'https://github.com/MoonshotAI/kimi-cli',
+  },
 ];
 
 class ConnectionsService {

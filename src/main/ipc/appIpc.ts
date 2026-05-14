@@ -1,4 +1,4 @@
-import { app, ipcMain, shell } from 'electron';
+import { app, dialog, ipcMain, shell } from 'electron';
 import { exec } from 'child_process';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -128,4 +128,23 @@ export function registerAppIpc() {
   });
   ipcMain.handle('app:getElectronVersion', () => process.versions.electron);
   ipcMain.handle('app:getPlatform', () => process.platform);
+
+  // File selection dialog for choosing binary paths
+  ipcMain.handle('dialog:select-file', async () => {
+    try {
+      const result = await dialog.showOpenDialog({
+        title: 'Select Claude Binary',
+        properties: ['openFile'],
+        filters: [{ name: 'Executables', extensions: ['*'] }],
+      });
+
+      if (result.canceled || result.filePaths.length === 0) {
+        return { success: false, error: 'No file selected' };
+      }
+
+      return { success: true, filePath: result.filePaths[0] };
+    } catch (error) {
+      return { success: false, error: (error as Error).message };
+    }
+  });
 }

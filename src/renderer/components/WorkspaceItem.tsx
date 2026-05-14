@@ -10,7 +10,7 @@ import { useWorkspaceBusy } from '../hooks/useWorkspaceBusy';
 function PrStateBadge({
   pr,
 }: {
-  pr: { isDraft: boolean; state: string; number: number; title?: string };
+  pr: { isDraft?: boolean; state: string; number: number; title?: string };
 }) {
   const label = pr.isDraft ? 'draft' : pr.state.toLowerCase();
   const cls =
@@ -82,13 +82,19 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({
           )}
         </div>
         {index && index <= 9 && (
-          <div className="ml-5 mt-0.5 flex items-center gap-1">
+          <div className="ml-5 mt-0.5 flex items-center gap-1.5 font-mono-custom">
             <span className="text-[10px] text-muted-foreground">⌘{index}</span>
+            {!isLoading && totalAdditions > 0 && (
+              <span className="text-[10px] text-green-600 dark:text-green-400">+{totalAdditions}</span>
+            )}
+            {!isLoading && totalDeletions > 0 && (
+              <span className="text-[10px] text-red-600 dark:text-red-400">-{totalDeletions}</span>
+            )}
           </div>
         )}
       </div>
       <div className="flex flex-shrink-0 items-center space-x-2">
-        {!isLoading && (totalAdditions > 0 || totalDeletions > 0) ? (
+        {!isLoading && (totalAdditions > 0 || totalDeletions > 0) && !index ? (
           <ChangesBadge additions={totalAdditions} deletions={totalDeletions} />
         ) : pr && workspace.worktreeType !== 'main' ? (
           <div className="flex items-center gap-1">

@@ -34,7 +34,7 @@ const MainContent: React.FC<MainContentProps> = ({
             <h1
               className="mb-4 text-6xl font-bold text-white"
               style={{
-                fontFamily: 'monospace',
+                fontFamily: '"Ioskeley Mono", monospace',
                 letterSpacing: '0.1em',
                 textShadow: '2px 2px 0px #000',
               }}

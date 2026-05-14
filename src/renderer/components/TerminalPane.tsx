@@ -163,7 +163,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
       if (termRef.current && el) {
         const { width, height } = el.getBoundingClientRect();
         const newCols = Math.max(20, Math.floor(width / 9));
-        const newRows = Math.max(10, Math.floor(height / 17));
+        const newRows = Math.max(10, Math.floor(height / 14));
 
         if (newCols !== cols || newRows !== rows) {
           termRef.current.resize(newCols, newRows);

@@ -26,7 +26,9 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './componen
 import { loadPanelSizes, savePanelSizes } from './lib/persisted-layout';
 import type { ImperativePanelHandle } from 'react-resizable-panels';
 import SettingsModal from './components/SettingsModal';
+import ConnectionsPage from './components/ConnectionsPage';
 import CommandPalette from './components/CommandPalette';
+import type { CliProviderStatus } from './types/connections';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useAgentSwitching } from './hooks/useAgentSwitching';
 
@@ -218,7 +220,7 @@ const MAIN_PANEL_MIN_SIZE = 30;
 
 const AppContent: React.FC = () => {
   // Initialize theme and font on app startup
-  const { effectiveTheme } = useTheme();
+  const { effectiveTheme, toggleTheme } = useTheme();
   const { font } = useFont();
 
   const { toast } = useToast();
@@ -241,6 +243,8 @@ const AppContent: React.FC = () => {
   const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(null);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showCommandPalette, setShowCommandPalette] = useState<boolean>(false);
+  const [showConnectionsPage, setShowConnectionsPage] = useState<boolean>(false);
+  const [cliProviders, setCliProviders] = useState<CliProviderStatus[]>([]);
   const showGithubRequirement = !ghInstalled || !isAuthenticated;
   // Show agent requirements block if none of the supported CLIs are detected locally.
   // We only actively detect Codex and Claude Code; Factory (Droid) docs are shown as an alternative.
@@ -385,6 +389,16 @@ const AppContent: React.FC = () => {
     setShowSettings(false);
   }, []);
 
+  const handleShowConnections = useCallback(() => {
+    setShowConnectionsPage(true);
+    setShowHomeView(false);
+  }, []);
+
+  const handleCloseConnections = useCallback(() => {
+    setShowConnectionsPage(false);
+    setShowHomeView(true);
+  }, []);
+
   const handleToggleCommandPalette = useCallback(() => {
     setShowCommandPalette((prev) => !prev);
   }, []);
@@ -487,6 +501,16 @@ const AppContent: React.FC = () => {
           setIsClaudeInstalled(!!claude?.isInstalled);
         } catch {
           setIsClaudeInstalled(false);
+        }
+
+        // Non-blocking: fetch CLI provider detection status
+        try {
+          const cliResult = await (window as any).electronAPI.getCliProviders();
+          if (cliResult?.success && Array.isArray(cliResult.providers)) {
+            setCliProviders(cliResult.providers);
+          }
+        } catch {
+          // Non-critical
         }
       } catch (error) {
         const { log } = await import('./lib/logger');
@@ -1098,6 +1122,10 @@ const AppContent: React.FC = () => {
   };
 
   const renderMainContent = () => {
+    if (showConnectionsPage) {
+      return <ConnectionsPage onClose={handleCloseConnections} />;
+    }
+
     if (showHomeView) {
       const hasProjects = projects.length > 0;
       return (
@@ -1159,7 +1187,7 @@ const AppContent: React.FC = () => {
                         </div>
                         <div className="ml-4 flex shrink-0 items-center gap-2">
                           {project.gitInfo.branch && (
-                            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+                            <span className="rounded bg-muted px-1.5 py-0.5 font-mono-custom text-xs text-muted-foreground">
                               {project.gitInfo.branch}
                             </span>
                           )}
@@ -1216,6 +1244,7 @@ const AppContent: React.FC = () => {
               projectName={selectedProject.name}
               className="min-h-0 flex-1"
               initialProvider={activeWorkspaceProvider || undefined}
+              detectedProviders={cliProviders}
             />
           ) : (
             <ProjectMainView
@@ -1258,8 +1287,7 @@ const AppContent: React.FC = () => {
             setCollapsedRef={rightSidebarSetCollapsedRef}
           />
           <Titlebar
-            onToggleSettings={handleToggleSettings}
-            isSettingsOpen={showSettings}
+            onShowConnections={handleShowConnections}
             currentPath={activeWorkspace?.path || selectedProject?.path || null}
           />
           <div className="flex flex-1 overflow-hidden pt-[var(--tb)]">
@@ -1350,6 +1378,7 @@ const AppContent: React.FC = () => {
             defaultBranch={selectedProject?.gitInfo.branch || 'main'}
             projectId={selectedProject?.id || ''}
             existingNames={(selectedProject?.workspaces || []).map((w) => w.name)}
+            detectedProviders={cliProviders}
           />
           <Toaster />
         </RightSidebarProvider>

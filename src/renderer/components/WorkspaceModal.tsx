@@ -8,6 +8,7 @@ import { Spinner } from './ui/spinner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { X, GitBranch } from 'lucide-react';
 import { ProviderSelector } from './ProviderSelector';
+import type { CliProviderStatus } from "../types/connections";
 import { type Provider } from '../types';
 import { Separator } from './ui/separator';
 import { type LinearIssueSummary } from '../types/linear';
@@ -29,6 +30,7 @@ interface WorkspaceModalProps {
   defaultBranch: string;
   projectId: string;
   existingNames?: string[];
+  detectedProviders?: CliProviderStatus[];
 }
 
 const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
@@ -40,6 +42,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   defaultBranch,
   projectId,
   existingNames = [],
+  detectedProviders,
 }) => {
   const [workspaceName, setWorkspaceName] = useState('');
   const [selectedProvider, setSelectedProvider] = useState<Provider>('codex');
@@ -235,7 +238,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                       {workspaceName && (
                         <div className="flex items-center space-x-2 rounded-lg bg-muted p-3">
                           <GitBranch className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                          <span className="overflow-hidden break-all font-mono text-sm text-muted-foreground">
+                          <span className="overflow-hidden break-all font-mono-custom text-sm text-muted-foreground">
                             {convertToWorkspaceName(workspaceName)}
                           </span>
                         </div>
@@ -311,6 +314,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                         value={selectedProvider}
                         onChange={setSelectedProvider}
                         className="w-full"
+                        detectedProviders={detectedProviders}
                       />
                     </div>
                   </div>

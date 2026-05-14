@@ -406,6 +406,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		ipcRenderer.on(channel, wrapped);
 		return () => ipcRenderer.removeListener(channel, wrapped);
 	},
+
+	// Binary path selection and version detection
+	selectClaudeBinary: () => ipcRenderer.invoke("dialog:select-file"),
+	detectClaudeBinaryVersion: (binaryPath: string) =>
+		ipcRenderer.invoke("claude:detect-binary-version", binaryPath),
 });
 
 // Type definitions for the exposed API
@@ -822,6 +827,19 @@ export interface ElectronAPI {
 			exitCode: number;
 		}) => void,
 	) => () => void;
+
+	// Binary path selection and version detection
+	selectClaudeBinary: () => Promise<{
+		success: boolean;
+		filePath?: string;
+		error?: string;
+	}>;
+	detectClaudeBinaryVersion: (binaryPath: string) => Promise<{
+		success: boolean;
+		exists?: boolean;
+		version?: string;
+		error?: string;
+	}>;
 }
 
 declare global {

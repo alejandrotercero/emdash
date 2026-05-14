@@ -85,7 +85,7 @@ export const WorkspaceList: React.FC<Props> = ({
                 </CardTitle>
                 <CardDescription className="mt-1 flex items-center text-sm text-gray-500 dark:text-gray-400">
                   <GitBranch className="mr-1 h-3 w-3" />
-                  <code className="font-mono text-xs">{workspace.branch}</code>
+                  <code className="font-mono-custom text-xs">{workspace.branch}</code>
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 pt-0 text-xs text-gray-600 dark:text-gray-300">

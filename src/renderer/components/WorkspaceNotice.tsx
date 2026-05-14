@@ -68,16 +68,16 @@ export const WorkspaceNotice: React.FC<Props> = ({
 	return (
 		<div className="flex items-center justify-between text-sm">
 			<div className="flex items-center gap-2">
-				<span className="text-xs font-mono uppercase text-muted-foreground">
+				<span className="text-xs font-mono-custom uppercase text-muted-foreground">
 					Workspace:
 				</span>
-				<span className="text-xs font-mono text-foreground">
+				<span className="text-xs font-mono-custom text-foreground">
 					{workspaceName}
 				</span>
 			</div>
 			{provider && providerInfo && (
 				<div className="flex items-center gap-2">
-					<span className="text-xs font-mono uppercase text-muted-foreground">
+					<span className="text-xs font-mono-custom uppercase text-muted-foreground">
 						Provider:
 					</span>
 					{providerInfo.logo && (
@@ -87,7 +87,7 @@ export const WorkspaceNotice: React.FC<Props> = ({
 							className="h-4 w-4 rounded-sm object-contain"
 						/>
 					)}
-					<span className="text-xs font-mono text-foreground">
+					<span className="text-xs font-mono-custom text-foreground">
 						{providerInfo.name}
 					</span>
 				</div>

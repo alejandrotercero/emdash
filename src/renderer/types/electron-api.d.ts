@@ -385,6 +385,7 @@ declare global {
         smallFastModel?: string;
         authToken?: string;
         disableNonessentialTraffic: boolean;
+        binaryPath?: string;
       }) => Promise<{ success: boolean; error?: string }>;
       getCustomClaudeConfigs: () => Promise<{
         success: boolean;
@@ -396,6 +397,7 @@ declare global {
           smallFastModel?: string;
           authToken?: string;
           disableNonessentialTraffic: boolean;
+          binaryPath?: string;
           createdAt: string;
           updatedAt: string;
         }>;
@@ -411,6 +413,7 @@ declare global {
           smallFastModel?: string;
           authToken?: string;
           disableNonessentialTraffic: boolean;
+          binaryPath?: string;
           createdAt: string;
           updatedAt: string;
         } | null;
@@ -525,6 +528,19 @@ declare global {
           exitCode: number;
         }) => void
       ) => () => void;
+
+      // Binary path selection and version detection
+      selectClaudeBinary: () => Promise<{
+        success: boolean;
+        filePath?: string;
+        error?: string;
+      }>;
+      detectClaudeBinaryVersion: (binaryPath: string) => Promise<{
+        success: boolean;
+        exists?: boolean;
+        version?: string;
+        error?: string;
+      }>;
     };
   }
 }

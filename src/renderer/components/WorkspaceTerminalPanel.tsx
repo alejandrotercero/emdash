@@ -27,11 +27,11 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
   if (!workspace) {
     return (
       <div
-        className={`flex h-full flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 ${className}`}
+        className={`flex h-full flex-col items-center justify-center bg-neutral-50 dark:bg-neutral-900 ${className}`}
       >
-        <Bot className="mb-2 h-8 w-8 text-gray-400" />
-        <h3 className="mb-1 text-sm text-gray-600 dark:text-gray-400">No Workspace Selected</h3>
-        <p className="text-center text-xs text-gray-500 dark:text-gray-500">
+        <Bot className="mb-2 h-8 w-8 text-neutral-400" />
+        <h3 className="mb-1 text-sm text-neutral-600 dark:text-neutral-400">No Workspace Selected</h3>
+        <p className="text-center text-xs text-neutral-500 dark:text-neutral-500">
           Select a workspace to view its terminal
         </p>
       </div>
@@ -39,11 +39,11 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
   }
 
   return (
-    <div className={`flex h-full flex-col bg-white dark:bg-gray-800 ${className}`}>
-      <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-900">
+    <div className={`flex h-full flex-col bg-white dark:bg-neutral-800 ${className}`}>
+      <div className="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900">
         <div className="flex min-w-0 items-center space-x-2">
           <h3
-            className="max-w-[220px] truncate text-sm font-medium text-gray-900 dark:text-gray-100"
+            className="max-w-[220px] truncate text-sm font-medium text-neutral-900 dark:text-neutral-100"
             title={workspace.name}
           >
             Terminal

@@ -7,6 +7,7 @@ import { useFileIndex } from '../hooks/useFileIndex';
 import FileTypeIcon from './ui/file-type-icon';
 import { ProviderSelector } from './ProviderSelector';
 import { type Provider } from '../types';
+import type { CliProviderStatus } from '../types/connections';
 
 interface ChatInputProps {
   value: string;
@@ -26,6 +27,7 @@ interface ChatInputProps {
   imageAttachments?: string[];
   onAttachImages?: (filePaths: string[]) => void;
   onRemoveImage?: (relPath: string) => void;
+  detectedProviders?: CliProviderStatus[];
 }
 
 const MAX_LOADING_SECONDS = 60 * 60; // 60 minutes
@@ -69,6 +71,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   imageAttachments = [],
   onAttachImages,
   onRemoveImage,
+  detectedProviders,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const shouldReduceMotion = useReducedMotion();
@@ -347,6 +350,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                   if (!selectDisabled && onProviderChange) onProviderChange(v);
                 }}
                 disabled={selectDisabled}
+                detectedProviders={detectedProviders}
               />
             </div>
 

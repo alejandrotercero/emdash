@@ -12,6 +12,7 @@ import kimiLogo from "../../assets/images/kimi.png";
 import openaiLogo from "../../assets/images/openai.png";
 import opencodeLogo from "../../assets/images/opencode.png";
 import qwenLogo from "../../assets/images/qwen.png";
+import type { CliProviderStatus } from "../types/connections";
 import type { Provider } from "../types";
 import {
 	Select,
@@ -43,6 +44,7 @@ interface ProviderSelectorProps {
 	onChange: (provider: Provider) => void;
 	disabled?: boolean;
 	className?: string;
+	detectedProviders?: CliProviderStatus[];
 }
 
 const providerConfig = {
@@ -65,6 +67,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
 	onChange,
 	disabled = false,
 	className = "",
+	detectedProviders,
 }) => {
 	const [customClaudeConfigs, setCustomClaudeConfigs] = useState<
 		CustomClaudeConfig[]
@@ -83,6 +86,17 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
 		};
 		loadCustomConfigs();
 	}, []);
+
+	// Filter providers to only show detected ones
+	const detectedIds = new Set(
+		(detectedProviders ?? [])
+			.filter((p) => p.status === "connected")
+			.map((p) => p.id),
+	);
+	const showAll = !detectedProviders || detectedProviders.length === 0;
+	const visibleProviders = Object.entries(providerConfig).filter(
+		([key]) => showAll || detectedIds.has(key),
+	);
 
 	// Check if the current value is a custom Claude config ID
 	const isCustomClaude = customClaudeConfigs.some(
@@ -154,7 +168,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
 					</SelectTrigger>
 				)}
 				<SelectContent side="top">
-					{Object.entries(providerConfig).map(([key, config]) => (
+					{visibleProviders.map(([key, config]) => (
 						<SelectItem key={key} value={key}>
 							<div className="flex items-center gap-2">
 								<img

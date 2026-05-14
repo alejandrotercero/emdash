@@ -1,8 +1,7 @@
 import { app } from "electron";
-import { existsSync, renameSync } from "fs";
+import { existsSync, renameSync, mkdirSync } from "fs";
 import { join } from "path";
-import type sqlite3Type from "sqlite3";
-import { promisify } from "util";
+import type { PGlite } from "@electric-sql/pglite";
 import { log } from "../lib/logger";
 
 export interface Project {
@@ -77,13 +76,13 @@ export interface CustomClaudeConfig {
 	smallFastModel?: string;
 	authToken?: string;
 	disableNonessentialTraffic: boolean;
+	binaryPath?: string;
 	createdAt: string;
 	updatedAt: string;
 }
 
 export class DatabaseService {
-	private db: sqlite3Type.Database | null = null;
-	private sqlite3: typeof sqlite3Type | null = null;
+	private db: PGlite | null = null;
 	private dbPath: string;
 	private disabled: boolean = false;
 
@@ -93,72 +92,43 @@ export class DatabaseService {
 		}
 		const userDataPath = app.getPath("userData");
 
-		// Preferred/current DB filename
-		const currentName = "emdash.db";
-		const currentPath = join(userDataPath, currentName);
-
-		// Known legacy filenames we may encounter from earlier builds/docs
-		const legacyNames = ["database.sqlite", "orcbench.db"];
-
-		// If current DB exists, use it
-		if (existsSync(currentPath)) {
-			this.dbPath = currentPath;
-			return;
-		}
-
-		// Otherwise, migrate the first legacy DB we find to the current name
-		for (const legacyName of legacyNames) {
-			const legacyPath = join(userDataPath, legacyName);
-			if (existsSync(legacyPath)) {
-				try {
-					renameSync(legacyPath, currentPath);
-					this.dbPath = currentPath;
-				} catch {
-					// If rename fails for any reason, fall back to using the legacy file in place
-					this.dbPath = legacyPath;
-				}
-				return;
-			}
-		}
-
-		// No existing DB found; initialize a new one at the current path
-		this.dbPath = currentPath;
+		// PGlite data directory (directory, not a single file)
+		this.dbPath = join(userDataPath, "pglite-data");
 	}
 
 	async initialize(): Promise<void> {
-		if (this.disabled) return Promise.resolve();
-		if (!this.sqlite3) {
-			try {
-				// Dynamic import to avoid loading native module at startup
-				this.sqlite3 = (await import(
-					"sqlite3"
-				)) as unknown as typeof sqlite3Type;
-			} catch (e) {
-				return Promise.reject(e);
-			}
-		}
-		return new Promise((resolve, reject) => {
-			this.db = new this.sqlite3!.Database(this.dbPath, (err) => {
-				if (err) {
-					reject(err);
-					return;
-				}
+		if (this.disabled) return;
 
-				this.createTables()
-					.then(() => resolve())
-					.catch(reject);
-			});
-		});
+		try {
+			const { PGlite: PGliteClass } = await import(
+				"@electric-sql/pglite"
+			) as any;
+
+			// Create data directory if it doesn't exist
+			if (!existsSync(this.dbPath)) {
+				mkdirSync(this.dbPath, { recursive: true });
+			}
+
+			// Initialize PGlite with filesystem persistence
+			this.db = await (PGliteClass as any).create(this.dbPath);
+
+			// Create tables and run migrations
+			await this.createTables();
+
+			// Migrate data from old SQLite database if it exists
+			await this.migrateFromSqlite();
+		} catch (e) {
+			log.error("Failed to initialize PGlite database:", e);
+			throw e;
+		}
 	}
 
 	private async createTables(): Promise<void> {
 		if (this.disabled) return;
 		if (!this.db) throw new Error("Database not initialized");
 
-		const runAsync = promisify(this.db.run.bind(this.db));
-
 		// Create projects table
-		await runAsync(`
+		await this.db.exec(`
       CREATE TABLE IF NOT EXISTS projects (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -166,14 +136,14 @@ export class DatabaseService {
         git_remote TEXT,
         git_branch TEXT,
         github_repository TEXT,
-        github_connected BOOLEAN DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        github_connected BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
 		// Create workspaces table
-		await runAsync(`
+		await this.db.exec(`
       CREATE TABLE IF NOT EXISTS workspaces (
         id TEXT PRIMARY KEY,
         project_id TEXT NOT NULL,
@@ -183,18 +153,18 @@ export class DatabaseService {
         status TEXT DEFAULT 'idle',
         agent_id TEXT,
         metadata TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE
       )
     `);
 
 		try {
-			await runAsync(`ALTER TABLE workspaces ADD COLUMN metadata TEXT`);
+			await this.db.exec(`ALTER TABLE workspaces ADD COLUMN metadata TEXT`);
 		} catch (error) {
 			if (
 				!(error instanceof Error) ||
-				!/duplicate column name/i.test(error.message)
+				!/already exists/i.test(error.message)
 			) {
 				throw error;
 			}
@@ -202,11 +172,11 @@ export class DatabaseService {
 
 		// Add new workspace columns for git polling and setup commands
 		try {
-			await runAsync(`ALTER TABLE workspaces ADD COLUMN worktree_type TEXT DEFAULT 'worktree'`);
+			await this.db.exec(`ALTER TABLE workspaces ADD COLUMN worktree_type TEXT DEFAULT 'worktree'`);
 		} catch (error) {
 			if (
 				!(error instanceof Error) ||
-				!/duplicate column name/i.test(error.message)
+				!/already exists/i.test(error.message)
 			) {
 				throw error;
 			}
@@ -215,7 +185,7 @@ export class DatabaseService {
 		// Migrate existing workspaces: set worktree_type based on path
 		// Main branch workspaces are those that don't contain '/worktrees/' in their path
 		try {
-			await runAsync(`
+			await this.db.exec(`
 				UPDATE workspaces
 				SET worktree_type = 'main'
 				WHERE worktree_type = 'worktree'
@@ -226,33 +196,33 @@ export class DatabaseService {
 		}
 
 		try {
-			await runAsync(`ALTER TABLE workspaces ADD COLUMN git_pull_enabled BOOLEAN DEFAULT 1`);
+			await this.db.exec(`ALTER TABLE workspaces ADD COLUMN git_pull_enabled BOOLEAN DEFAULT true`);
 		} catch (error) {
 			if (
 				!(error instanceof Error) ||
-				!/duplicate column name/i.test(error.message)
+				!/already exists/i.test(error.message)
 			) {
 				throw error;
 			}
 		}
 
 		try {
-			await runAsync(`ALTER TABLE workspaces ADD COLUMN last_git_check DATETIME`);
+			await this.db.exec(`ALTER TABLE workspaces ADD COLUMN last_git_check TIMESTAMP`);
 		} catch (error) {
 			if (
 				!(error instanceof Error) ||
-				!/duplicate column name/i.test(error.message)
+				!/already exists/i.test(error.message)
 			) {
 				throw error;
 			}
 		}
 
 		try {
-			await runAsync(`ALTER TABLE workspaces ADD COLUMN setup_commands TEXT`);
+			await this.db.exec(`ALTER TABLE workspaces ADD COLUMN setup_commands TEXT`);
 		} catch (error) {
 			if (
 				!(error instanceof Error) ||
-				!/duplicate column name/i.test(error.message)
+				!/already exists/i.test(error.message)
 			) {
 				throw error;
 			}
@@ -260,43 +230,43 @@ export class DatabaseService {
 
 		// Add base_branch column to track original branch for PR targeting
 		try {
-			await runAsync(`ALTER TABLE workspaces ADD COLUMN base_branch TEXT`);
+			await this.db.exec(`ALTER TABLE workspaces ADD COLUMN base_branch TEXT`);
 		} catch (error) {
 			if (
 				!(error instanceof Error) ||
-				!/duplicate column name/i.test(error.message)
+				!/already exists/i.test(error.message)
 			) {
 				throw error;
 			}
 		}
 
 		// Create conversations table
-		await runAsync(`
+		await this.db.exec(`
       CREATE TABLE IF NOT EXISTS conversations (
         id TEXT PRIMARY KEY,
         workspace_id TEXT NOT NULL,
         title TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (workspace_id) REFERENCES workspaces (id) ON DELETE CASCADE
       )
     `);
 
 		// Create messages table
-		await runAsync(`
+		await this.db.exec(`
       CREATE TABLE IF NOT EXISTS messages (
         id TEXT PRIMARY KEY,
         conversation_id TEXT NOT NULL,
         content TEXT NOT NULL,
         sender TEXT NOT NULL CHECK (sender IN ('user', 'agent')),
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         metadata TEXT,
         FOREIGN KEY (conversation_id) REFERENCES conversations (id) ON DELETE CASCADE
       )
     `);
 
 		// Create custom_claude_configs table
-		await runAsync(`
+		await this.db.exec(`
       CREATE TABLE IF NOT EXISTS custom_claude_configs (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL UNIQUE,
@@ -304,49 +274,211 @@ export class DatabaseService {
         model TEXT,
         small_fast_model TEXT,
         auth_token TEXT,
-        disable_nonessential_traffic BOOLEAN DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        disable_nonessential_traffic BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
+		// Add binary_path column for custom Claude binary paths
+		try {
+			await this.db.exec(`ALTER TABLE custom_claude_configs ADD COLUMN binary_path TEXT`);
+		} catch (error) {
+			if (
+				!(error instanceof Error) ||
+				!/already exists/i.test(error.message)
+			) {
+				throw error;
+			}
+		}
+
 		// Create setup_commands table
-		await runAsync(`
+		await this.db.exec(`
       CREATE TABLE IF NOT EXISTS setup_commands (
         id TEXT PRIMARY KEY,
         type TEXT NOT NULL CHECK (type IN ('global', 'project', 'workspace')),
         parent_id TEXT NOT NULL,
         commands TEXT NOT NULL,
-        enabled BOOLEAN DEFAULT 1,
+        enabled BOOLEAN DEFAULT true,
         name TEXT,
         description TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
 		// Create indexes
-		await runAsync(
+		await this.db.exec(
 			`CREATE INDEX IF NOT EXISTS idx_projects_path ON projects (path)`,
 		);
-		await runAsync(
+		await this.db.exec(
 			`CREATE INDEX IF NOT EXISTS idx_workspaces_project_id ON workspaces (project_id)`,
 		);
-		await runAsync(
+		await this.db.exec(
 			`CREATE INDEX IF NOT EXISTS idx_conversations_workspace_id ON conversations (workspace_id)`,
 		);
-		await runAsync(
+		await this.db.exec(
 			`CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages (conversation_id)`,
 		);
-		await runAsync(
+		await this.db.exec(
 			`CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages (timestamp)`,
 		);
-		await runAsync(
+		await this.db.exec(
 			`CREATE INDEX IF NOT EXISTS idx_custom_claude_configs_name ON custom_claude_configs (name)`,
 		);
-		await runAsync(
+		await this.db.exec(
 			`CREATE INDEX IF NOT EXISTS idx_setup_commands_parent ON setup_commands (parent_id, type)`,
 		);
+	}
+
+	/**
+	 * One-time migration from the old SQLite database (emdash.db) to PGlite.
+	 * Runs after createTables() on first launch with an existing sqlite3 DB present.
+	 */
+	private async migrateFromSqlite(): Promise<void> {
+		if (this.disabled) return;
+
+		const userDataPath = app.getPath("userData");
+		const oldDbPath = join(userDataPath, "emdash.db");
+		const migratedMarker = join(userDataPath, "emdash.db.migrated");
+
+		// Skip if no old DB or already migrated
+		if (!existsSync(oldDbPath) || existsSync(migratedMarker)) return;
+
+		log.info("Migrating data from SQLite database to PGlite...");
+
+		let sqlite3Module: any;
+		try {
+			// @ts-expect-error - sqlite3 may be absent; gracefully handled by try/catch
+			sqlite3Module = await import("sqlite3");
+		} catch {
+			log.warn("sqlite3 module not available, skipping data migration");
+			// Mark as done so we don't retry
+			renameSync(oldDbPath, migratedMarker);
+			return;
+		}
+
+		const { promisify } = await import("util");
+
+		try {
+			// Open old SQLite DB
+			const oldDb: any = await new Promise((resolve, reject) => {
+				const db = new sqlite3Module.Database(oldDbPath, (err: Error | null) => {
+					if (err) reject(err);
+					else resolve(db);
+				});
+			});
+
+			const allAsync = promisify(oldDb.all.bind(oldDb));
+
+			// Migrate all data inside a single PGlite transaction
+			await this.db!.transaction(async (tx) => {
+				// Migrate projects
+				const projects = await allAsync("SELECT * FROM projects ORDER BY created_at ASC");
+				for (const p of projects) {
+					await tx.query(
+						`INSERT INTO projects (id, name, path, git_remote, git_branch, github_repository, github_connected, created_at, updated_at)
+						 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+						 ON CONFLICT (path) DO NOTHING`,
+						[p.id, p.name, p.path, p.git_remote, p.git_branch,
+						 p.github_repository, !!p.github_connected,
+						 p.created_at || new Date().toISOString(),
+						 p.updated_at || new Date().toISOString()]
+					);
+				}
+
+				// Migrate workspaces
+				const workspaces = await allAsync("SELECT * FROM workspaces ORDER BY created_at ASC");
+				for (const w of workspaces) {
+					await tx.query(
+						`INSERT INTO workspaces
+						 (id, project_id, name, branch, base_branch, path, status, agent_id,
+						  metadata, worktree_type, git_pull_enabled, last_git_check,
+						  setup_commands, created_at, updated_at)
+						 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+						 ON CONFLICT (id) DO NOTHING`,
+						[w.id, w.project_id, w.name, w.branch, w.base_branch || null,
+						 w.path, w.status, w.agent_id || null, w.metadata || null,
+						 w.worktree_type || "worktree", !!w.git_pull_enabled,
+						 w.last_git_check || null, w.setup_commands || null,
+						 w.created_at || new Date().toISOString(),
+						 w.updated_at || new Date().toISOString()]
+					);
+				}
+
+				// Migrate conversations
+				const conversations = await allAsync("SELECT * FROM conversations ORDER BY created_at ASC");
+				for (const c of conversations) {
+					await tx.query(
+						`INSERT INTO conversations (id, workspace_id, title, created_at, updated_at)
+						 VALUES ($1, $2, $3, $4, $5)
+						 ON CONFLICT (id) DO NOTHING`,
+						[c.id, c.workspace_id, c.title,
+						 c.created_at || new Date().toISOString(),
+						 c.updated_at || new Date().toISOString()]
+					);
+				}
+
+				// Migrate messages
+				const messages = await allAsync("SELECT * FROM messages ORDER BY timestamp ASC");
+				for (const m of messages) {
+					await tx.query(
+						`INSERT INTO messages (id, conversation_id, content, sender, timestamp, metadata)
+						 VALUES ($1, $2, $3, $4, $5, $6)
+						 ON CONFLICT (id) DO NOTHING`,
+						[m.id, m.conversation_id, m.content, m.sender,
+						 m.timestamp || new Date().toISOString(), m.metadata || null]
+					);
+				}
+
+				// Migrate custom_claude_configs
+				const configs = await allAsync("SELECT * FROM custom_claude_configs ORDER BY created_at ASC");
+				for (const cfg of configs) {
+					await tx.query(
+						`INSERT INTO custom_claude_configs
+						 (id, name, base_url, model, small_fast_model, auth_token,
+						  disable_nonessential_traffic, created_at, updated_at)
+						 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+						 ON CONFLICT (name) DO NOTHING`,
+						[cfg.id, cfg.name, cfg.base_url || null, cfg.model || null,
+						 cfg.small_fast_model || null, cfg.auth_token || null,
+						 !!cfg.disable_nonessential_traffic,
+						 cfg.created_at || new Date().toISOString(),
+						 cfg.updated_at || new Date().toISOString()]
+					);
+				}
+
+				// Migrate setup_commands
+				const commands = await allAsync("SELECT * FROM setup_commands ORDER BY created_at ASC");
+				for (const cmd of commands) {
+					await tx.query(
+						`INSERT INTO setup_commands
+						 (id, type, parent_id, commands, enabled, name, description,
+						  created_at, updated_at)
+						 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+						 ON CONFLICT (id) DO NOTHING`,
+						[cmd.id, cmd.type, cmd.parent_id, cmd.commands,
+						 !!cmd.enabled, cmd.name || null, cmd.description || null,
+						 cmd.created_at || new Date().toISOString(),
+						 cmd.updated_at || new Date().toISOString()]
+					);
+				}
+			});
+
+			// Close old DB and mark as migrated
+			await new Promise<void>((resolve, reject) => {
+				oldDb.close((err: Error | null) => {
+					if (err) reject(err);
+					else resolve();
+				});
+			});
+			renameSync(oldDbPath, migratedMarker);
+			log.info("SQLite database migration to PGlite completed successfully");
+		} catch (error) {
+			log.error("Failed to migrate SQLite data to PGlite:", error);
+			// Do NOT delete the old database on failure; user data is safe
+			throw error;
+		}
 	}
 
 	async saveProject(
@@ -364,78 +496,58 @@ export class DatabaseService {
 		// - If no row exists for this path: insert with the provided id.
 		// - If a row exists for this path: update fields; do NOT change id or path.
 		// - created_at remains intact on updates; updated_at is bumped.
-		return new Promise((resolve, reject) => {
-			this.db!.run(
-				`INSERT INTO projects (id, name, path, git_remote, git_branch, github_repository, github_connected, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-         ON CONFLICT(path) DO UPDATE SET
-           name = excluded.name,
-           git_remote = excluded.git_remote,
-           git_branch = excluded.git_branch,
-           github_repository = excluded.github_repository,
-           github_connected = excluded.github_connected,
-           updated_at = CURRENT_TIMESTAMP
-        `,
-				[
-					project.id,
-					project.name,
-					project.path,
-					project.gitInfo.remote || null,
-					project.gitInfo.branch || null,
-					project.githubInfo?.repository || null,
-					project.githubInfo?.connected ? 1 : 0,
-				],
-				(err) => {
-					if (err) {
-						reject(err);
-					} else {
-						resolve();
-					}
-				},
-			);
-		});
+		await this.db.query(
+			`INSERT INTO projects (id, name, path, git_remote, git_branch, github_repository, github_connected, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+       ON CONFLICT (path) DO UPDATE SET
+         name = EXCLUDED.name,
+         git_remote = EXCLUDED.git_remote,
+         git_branch = EXCLUDED.git_branch,
+         github_repository = EXCLUDED.github_repository,
+         github_connected = EXCLUDED.github_connected,
+         updated_at = CURRENT_TIMESTAMP`,
+			[
+				project.id,
+				project.name,
+				project.path,
+				project.gitInfo.remote || null,
+				project.gitInfo.branch || null,
+				project.githubInfo?.repository || null,
+				project.githubInfo?.connected ?? false,
+			],
+		);
 	}
 
 	async getProjects(): Promise<Project[]> {
 		if (this.disabled) return [];
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			this.db!.all(
-				`
-        SELECT
-          id, name, path, git_remote, git_branch, github_repository, github_connected,
-          created_at, updated_at
-        FROM projects
-        ORDER BY updated_at DESC
-      `,
-				(err, rows: any[]) => {
-					if (err) {
-						reject(err);
-					} else {
-						const projects = rows.map((row) => ({
-							id: row.id,
-							name: row.name,
-							path: row.path,
-							gitInfo: {
-								isGitRepo: !!(row.git_remote || row.git_branch),
-								remote: row.git_remote,
-								branch: row.git_branch,
-							},
-							githubInfo: row.github_repository
-								? {
-										repository: row.github_repository,
-										connected: !!row.github_connected,
-									}
-								: undefined,
-							createdAt: row.created_at,
-							updatedAt: row.updated_at,
-						}));
-						resolve(projects);
+		const result = await this.db.query(`
+      SELECT
+        id, name, path, git_remote, git_branch, github_repository, github_connected,
+        created_at, updated_at
+      FROM projects
+      ORDER BY updated_at DESC
+    `);
+
+		return result.rows.map((row: any) => ({
+			id: row.id,
+			name: row.name,
+			path: row.path,
+			gitInfo: {
+				isGitRepo: !!(row.git_remote || row.git_branch),
+				remote: row.git_remote,
+				branch: row.git_branch,
+			},
+			githubInfo: row.github_repository
+				? {
+						repository: row.github_repository,
+						connected: !!row.github_connected,
 					}
-				},
-			);
-		});
+				: undefined,
+			createdAt: row.created_at,
+			updatedAt: row.updated_at,
+		}));
 	}
 
 	async saveWorkspace(
@@ -444,41 +556,44 @@ export class DatabaseService {
 		if (this.disabled) return;
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			this.db!.run(
-				`
-        INSERT OR REPLACE INTO workspaces
-        (id, project_id, name, branch, base_branch, path, status, agent_id, metadata, worktree_type, git_pull_enabled, last_git_check, setup_commands, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-      `,
-				[
-					workspace.id,
-					workspace.projectId,
-					workspace.name,
-					workspace.branch,
-					workspace.baseBranch || null,
-					workspace.path,
-					workspace.status,
-					workspace.agentId || null,
-					typeof workspace.metadata === "string"
-						? workspace.metadata
-						: workspace.metadata
-							? JSON.stringify(workspace.metadata)
-							: null,
-					workspace.worktreeType || 'worktree',
-					workspace.gitPullEnabled !== undefined ? (workspace.gitPullEnabled ? 1 : 0) : 1,
-					workspace.lastGitCheck || null,
-					workspace.setupCommands || null,
-				],
-				(err) => {
-					if (err) {
-						reject(err);
-					} else {
-						resolve();
-					}
-				},
-			);
-		});
+		await this.db.query(
+			`INSERT INTO workspaces
+       (id, project_id, name, branch, base_branch, path, status, agent_id, metadata, worktree_type, git_pull_enabled, last_git_check, setup_commands, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)
+       ON CONFLICT (id) DO UPDATE SET
+         project_id = EXCLUDED.project_id,
+         name = EXCLUDED.name,
+         branch = EXCLUDED.branch,
+         base_branch = EXCLUDED.base_branch,
+         path = EXCLUDED.path,
+         status = EXCLUDED.status,
+         agent_id = EXCLUDED.agent_id,
+         metadata = EXCLUDED.metadata,
+         worktree_type = EXCLUDED.worktree_type,
+         git_pull_enabled = EXCLUDED.git_pull_enabled,
+         last_git_check = EXCLUDED.last_git_check,
+         setup_commands = EXCLUDED.setup_commands,
+         updated_at = CURRENT_TIMESTAMP`,
+			[
+				workspace.id,
+				workspace.projectId,
+				workspace.name,
+				workspace.branch,
+				workspace.baseBranch || null,
+				workspace.path,
+				workspace.status,
+				workspace.agentId || null,
+				typeof workspace.metadata === "string"
+					? workspace.metadata
+					: workspace.metadata
+						? JSON.stringify(workspace.metadata)
+						: null,
+				workspace.worktreeType || 'worktree',
+				workspace.gitPullEnabled !== undefined ? workspace.gitPullEnabled : true,
+				workspace.lastGitCheck || null,
+				workspace.setupCommands || null,
+			],
+		);
 	}
 
 	async getWorkspaces(projectId?: string): Promise<Workspace[]> {
@@ -495,53 +610,46 @@ export class DatabaseService {
 		const params: any[] = [];
 
 		if (projectId) {
-			query += " WHERE project_id = ?";
+			query += " WHERE project_id = $1";
 			params.push(projectId);
 		}
 
 		query += " ORDER BY updated_at DESC";
 
-		return new Promise((resolve, reject) => {
-			this.db!.all(query, params, (err, rows: any[]) => {
-				if (err) {
-					reject(err);
-				} else {
-					const workspaces = rows.map((row) => {
-						let metadata: any = null;
-						if (row.metadata) {
-							try {
-								metadata = JSON.parse(row.metadata);
-							} catch (parseError) {
-								console.warn(
-									"Failed to parse workspace metadata for",
-									row.id,
-									parseError,
-								);
-								metadata = null;
-							}
-						}
+		const result = await this.db.query(query, params);
 
-						return {
-							id: row.id,
-							projectId: row.project_id,
-							name: row.name,
-							branch: row.branch,
-							baseBranch: row.base_branch || undefined,
-							path: row.path,
-							status: row.status,
-							agentId: row.agent_id,
-							metadata,
-							worktreeType: row.worktree_type as "worktree" | "main" || "worktree",
-							gitPullEnabled: !!row.git_pull_enabled,
-							lastGitCheck: row.last_git_check,
-							setupCommands: row.setup_commands,
-							createdAt: row.created_at,
-							updatedAt: row.updated_at,
-						};
-					});
-					resolve(workspaces);
+		return result.rows.map((row: any) => {
+			let metadata: any = null;
+			if (row.metadata) {
+				try {
+					metadata = JSON.parse(row.metadata);
+				} catch (parseError) {
+					console.warn(
+						"Failed to parse workspace metadata for",
+						row.id,
+						parseError,
+					);
+					metadata = null;
 				}
-			});
+			}
+
+			return {
+				id: row.id,
+				projectId: row.project_id,
+				name: row.name,
+				branch: row.branch,
+				baseBranch: row.base_branch || undefined,
+				path: row.path,
+				status: row.status,
+				agentId: row.agent_id,
+				metadata,
+				worktreeType: row.worktree_type as "worktree" | "main" || "worktree",
+				gitPullEnabled: !!row.git_pull_enabled,
+				lastGitCheck: row.last_git_check,
+				setupCommands: row.setup_commands,
+				createdAt: row.created_at,
+				updatedAt: row.updated_at,
+			};
 		});
 	}
 
@@ -549,34 +657,14 @@ export class DatabaseService {
 		if (this.disabled) return;
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			this.db!.run("DELETE FROM projects WHERE id = ?", [projectId], (err) => {
-				if (err) {
-					reject(err);
-				} else {
-					resolve();
-				}
-			});
-		});
+		await this.db.query("DELETE FROM projects WHERE id = $1", [projectId]);
 	}
 
 	async deleteWorkspace(workspaceId: string): Promise<void> {
 		if (this.disabled) return;
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			this.db!.run(
-				"DELETE FROM workspaces WHERE id = ?",
-				[workspaceId],
-				(err) => {
-					if (err) {
-						reject(err);
-					} else {
-						resolve();
-					}
-				},
-			);
-		});
+		await this.db.query("DELETE FROM workspaces WHERE id = $1", [workspaceId]);
 	}
 
 	// Conversation management methods
@@ -585,53 +673,36 @@ export class DatabaseService {
 	): Promise<void> {
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			this.db!.run(
-				`
-        INSERT OR REPLACE INTO conversations
-        (id, workspace_id, title, updated_at)
-        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-      `,
-				[conversation.id, conversation.workspaceId, conversation.title],
-				(err) => {
-					if (err) {
-						reject(err);
-					} else {
-						resolve();
-					}
-				},
-			);
-		});
+		await this.db.query(
+			`INSERT INTO conversations
+       (id, workspace_id, title, updated_at)
+       VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+       ON CONFLICT (id) DO UPDATE SET
+         workspace_id = EXCLUDED.workspace_id,
+         title = EXCLUDED.title,
+         updated_at = CURRENT_TIMESTAMP`,
+			[conversation.id, conversation.workspaceId, conversation.title],
+		);
 	}
 
 	async getConversations(workspaceId: string): Promise<Conversation[]> {
 		if (this.disabled) return [];
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			this.db!.all(
-				`
-        SELECT * FROM conversations
-        WHERE workspace_id = ?
-        ORDER BY updated_at DESC
-      `,
-				[workspaceId],
-				(err, rows: any[]) => {
-					if (err) {
-						reject(err);
-					} else {
-						const conversations = rows.map((row) => ({
-							id: row.id,
-							workspaceId: row.workspace_id,
-							title: row.title,
-							createdAt: row.created_at,
-							updatedAt: row.updated_at,
-						}));
-						resolve(conversations);
-					}
-				},
-			);
-		});
+		const result = await this.db.query(
+			`SELECT * FROM conversations
+       WHERE workspace_id = $1
+       ORDER BY updated_at DESC`,
+			[workspaceId],
+		);
+
+		return result.rows.map((row: any) => ({
+			id: row.id,
+			workspaceId: row.workspace_id,
+			title: row.title,
+			createdAt: row.created_at,
+			updatedAt: row.updated_at,
+		}));
 	}
 
 	async getOrCreateDefaultConversation(
@@ -648,60 +719,42 @@ export class DatabaseService {
 		}
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			// First, try to get existing conversations
-			this.db!.all(
-				`
-        SELECT * FROM conversations
-        WHERE workspace_id = ?
-        ORDER BY created_at ASC
-        LIMIT 1
-      `,
-				[workspaceId],
-				(err, rows: any[]) => {
-					if (err) {
-						reject(err);
-						return;
-					}
+		// First, try to get existing conversations
+		const result = await this.db.query(
+			`SELECT * FROM conversations
+       WHERE workspace_id = $1
+       ORDER BY created_at ASC
+       LIMIT 1`,
+			[workspaceId],
+		);
 
-					if (rows.length > 0) {
-						// Return existing conversation
-						const row = rows[0];
-						resolve({
-							id: row.id,
-							workspaceId: row.workspace_id,
-							title: row.title,
-							createdAt: row.created_at,
-							updatedAt: row.updated_at,
-						});
-					} else {
-						// Create new default conversation
-						const conversationId = `conv-${workspaceId}-${Date.now()}`;
-						this.db!.run(
-							`
-            INSERT INTO conversations
-            (id, workspace_id, title, created_at, updated_at)
-            VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-          `,
-							[conversationId, workspaceId, "Default Conversation"],
-							(err) => {
-								if (err) {
-									reject(err);
-								} else {
-									resolve({
-										id: conversationId,
-										workspaceId,
-										title: "Default Conversation",
-										createdAt: new Date().toISOString(),
-										updatedAt: new Date().toISOString(),
-									});
-								}
-							},
-						);
-					}
-				},
-			);
-		});
+		if (result.rows.length > 0) {
+			const row = result.rows[0] as any;
+			return {
+				id: row.id,
+				workspaceId: row.workspace_id,
+				title: row.title,
+				createdAt: row.created_at,
+				updatedAt: row.updated_at,
+			};
+		}
+
+		// Create new default conversation
+		const conversationId = `conv-${workspaceId}-${Date.now()}`;
+		await this.db.query(
+			`INSERT INTO conversations
+       (id, workspace_id, title, created_at, updated_at)
+       VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+			[conversationId, workspaceId, "Default Conversation"],
+		);
+
+		return {
+			id: conversationId,
+			workspaceId,
+			title: "Default Conversation",
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
+		};
 	}
 
 	// Message management methods
@@ -709,104 +762,59 @@ export class DatabaseService {
 		if (this.disabled) return;
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			this.db!.run(
-				`
-        INSERT INTO messages
-        (id, conversation_id, content, sender, metadata, timestamp)
-        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-      `,
-				[
-					message.id,
-					message.conversationId,
-					message.content,
-					message.sender,
-					message.metadata || null,
-				],
-				(err) => {
-					if (err) {
-						reject(err);
-					} else {
-						// Update conversation's updated_at timestamp
-						this.db!.run(
-							`
-            UPDATE conversations
-            SET updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `,
-							[message.conversationId],
-							() => {
-								resolve();
-							},
-						);
-					}
-				},
-			);
-		});
+		await this.db.query(
+			`INSERT INTO messages
+       (id, conversation_id, content, sender, metadata, timestamp)
+       VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
+			[
+				message.id,
+				message.conversationId,
+				message.content,
+				message.sender,
+				message.metadata || null,
+			],
+		);
+
+		// Update conversation's updated_at timestamp
+		await this.db.query(
+			`UPDATE conversations
+       SET updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1`,
+			[message.conversationId],
+		);
 	}
 
 	async getMessages(conversationId: string): Promise<Message[]> {
 		if (this.disabled) return [];
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			this.db!.all(
-				`
-        SELECT * FROM messages
-        WHERE conversation_id = ?
-        ORDER BY timestamp ASC
-      `,
-				[conversationId],
-				(err, rows: any[]) => {
-					if (err) {
-						reject(err);
-					} else {
-						const messages = rows.map((row) => ({
-							id: row.id,
-							conversationId: row.conversation_id,
-							content: row.content,
-							sender: row.sender as "user" | "agent",
-							timestamp: row.timestamp,
-							metadata: row.metadata,
-						}));
-						resolve(messages);
-					}
-				},
-			);
-		});
+		const result = await this.db.query(
+			`SELECT * FROM messages
+       WHERE conversation_id = $1
+       ORDER BY timestamp ASC`,
+			[conversationId],
+		);
+
+		return result.rows.map((row: any) => ({
+			id: row.id,
+			conversationId: row.conversation_id,
+			content: row.content,
+			sender: row.sender as "user" | "agent",
+			timestamp: row.timestamp,
+			metadata: row.metadata,
+		}));
 	}
 
 	async deleteConversation(conversationId: string): Promise<void> {
 		if (this.disabled) return;
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			this.db!.run(
-				"DELETE FROM conversations WHERE id = ?",
-				[conversationId],
-				(err) => {
-					if (err) {
-						reject(err);
-					} else {
-						resolve();
-					}
-				},
-			);
-		});
+		await this.db.query("DELETE FROM conversations WHERE id = $1", [conversationId]);
 	}
 
 	async close(): Promise<void> {
 		if (this.disabled || !this.db) return;
-
-		return new Promise((resolve, reject) => {
-			this.db!.close((err) => {
-				if (err) {
-					reject(err);
-				} else {
-					resolve();
-				}
-			});
-		});
+		await this.db.close();
 	}
 
 	// Custom Claude config management methods
@@ -816,128 +824,92 @@ export class DatabaseService {
 		if (this.disabled) return;
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			this.db!.run(
-				`INSERT INTO custom_claude_configs
-         (id, name, base_url, model, small_fast_model, auth_token, disable_nonessential_traffic, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-         ON CONFLICT(name) DO UPDATE SET
-           base_url = excluded.base_url,
-           model = excluded.model,
-           small_fast_model = excluded.small_fast_model,
-           auth_token = excluded.auth_token,
-           disable_nonessential_traffic = excluded.disable_nonessential_traffic,
-           updated_at = CURRENT_TIMESTAMP
-        `,
-				[
-					config.id,
-					config.name,
-					config.baseUrl || null,
-					config.model || null,
-					config.smallFastModel || null,
-					config.authToken || null,
-					config.disableNonessentialTraffic ? 1 : 0,
-				],
-				(err) => {
-					if (err) {
-						reject(err);
-					} else {
-						resolve();
-					}
-				},
-			);
-		});
+		await this.db.query(
+			`INSERT INTO custom_claude_configs
+       (id, name, base_url, model, small_fast_model, auth_token, disable_nonessential_traffic, binary_path, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
+       ON CONFLICT (name) DO UPDATE SET
+         base_url = EXCLUDED.base_url,
+         model = EXCLUDED.model,
+         small_fast_model = EXCLUDED.small_fast_model,
+         auth_token = EXCLUDED.auth_token,
+         disable_nonessential_traffic = EXCLUDED.disable_nonessential_traffic,
+         binary_path = EXCLUDED.binary_path,
+         updated_at = CURRENT_TIMESTAMP`,
+			[
+				config.id,
+				config.name,
+				config.baseUrl || null,
+				config.model || null,
+				config.smallFastModel || null,
+				config.authToken || null,
+				config.disableNonessentialTraffic,
+				config.binaryPath || null,
+			],
+		);
 	}
 
 	async getCustomClaudeConfigs(): Promise<CustomClaudeConfig[]> {
 		if (this.disabled) return [];
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			this.db!.all(
-				`
-        SELECT
-          id, name, base_url, model, small_fast_model, auth_token,
-          disable_nonessential_traffic, created_at, updated_at
-        FROM custom_claude_configs
-        ORDER BY created_at DESC
-      `,
-				(err, rows: any[]) => {
-					if (err) {
-						reject(err);
-					} else {
-						const configs = rows.map((row) => ({
-							id: row.id,
-							name: row.name,
-							baseUrl: row.base_url,
-							model: row.model,
-							smallFastModel: row.small_fast_model,
-							authToken: row.auth_token,
-							disableNonessentialTraffic: !!row.disable_nonessential_traffic,
-							createdAt: row.created_at,
-							updatedAt: row.updated_at,
-						}));
-						resolve(configs);
-					}
-				},
-			);
-		});
+		const result = await this.db.query(`
+      SELECT
+        id, name, base_url, model, small_fast_model, auth_token,
+        disable_nonessential_traffic, binary_path, created_at, updated_at
+      FROM custom_claude_configs
+      ORDER BY created_at DESC
+    `);
+
+		return result.rows.map((row: any) => ({
+			id: row.id,
+			name: row.name,
+			baseUrl: row.base_url,
+			model: row.model,
+			smallFastModel: row.small_fast_model,
+			authToken: row.auth_token,
+			disableNonessentialTraffic: !!row.disable_nonessential_traffic,
+			binaryPath: row.binary_path || undefined,
+			createdAt: row.created_at,
+			updatedAt: row.updated_at,
+		}));
 	}
 
 	async getCustomClaudeConfig(id: string): Promise<CustomClaudeConfig | null> {
 		if (this.disabled) return null;
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			this.db!.get(
-				`
-        SELECT
-          id, name, base_url, model, small_fast_model, auth_token,
-          disable_nonessential_traffic, created_at, updated_at
-        FROM custom_claude_configs
-        WHERE id = ?
-      `,
-				[id],
-				(err, row: any) => {
-					if (err) {
-						reject(err);
-					} else if (!row) {
-						resolve(null);
-					} else {
-						resolve({
-							id: row.id,
-							name: row.name,
-							baseUrl: row.base_url,
-							model: row.model,
-							smallFastModel: row.small_fast_model,
-							authToken: row.auth_token,
-							disableNonessentialTraffic: !!row.disable_nonessential_traffic,
-							createdAt: row.created_at,
-							updatedAt: row.updated_at,
-						});
-					}
-				},
-			);
-		});
+		const result = await this.db.query(
+			`SELECT
+         id, name, base_url, model, small_fast_model, auth_token,
+         disable_nonessential_traffic, binary_path, created_at, updated_at
+       FROM custom_claude_configs
+       WHERE id = $1`,
+			[id],
+		);
+
+		const row = result.rows[0] as any | undefined;
+		if (!row) return null;
+
+		return {
+			id: row.id,
+			name: row.name,
+			baseUrl: row.base_url,
+			model: row.model,
+			smallFastModel: row.small_fast_model,
+			authToken: row.auth_token,
+			disableNonessentialTraffic: !!row.disable_nonessential_traffic,
+			binaryPath: row.binary_path || undefined,
+			createdAt: row.created_at,
+			updatedAt: row.updated_at,
+		};
 	}
 
 	async deleteCustomClaudeConfig(id: string): Promise<void> {
 		if (this.disabled) return;
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			this.db!.run(
-				"DELETE FROM custom_claude_configs WHERE id = ?",
-				[id],
-				(err) => {
-					if (err) {
-						reject(err);
-					} else {
-						resolve();
-					}
-				},
-			);
-		});
+		await this.db.query("DELETE FROM custom_claude_configs WHERE id = $1", [id]);
 	}
 
 	// Setup command management methods
@@ -947,31 +919,28 @@ export class DatabaseService {
 		if (this.disabled) return;
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			this.db!.run(
-				`
-        INSERT OR REPLACE INTO setup_commands
-        (id, type, parent_id, commands, enabled, name, description, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-      `,
-				[
-					command.id,
-					command.type,
-					command.parentId,
-					JSON.stringify(command.commands),
-					command.enabled ? 1 : 0,
-					command.name || null,
-					command.description || null,
-				],
-				(err) => {
-					if (err) {
-						reject(err);
-					} else {
-						resolve();
-					}
-				},
-			);
-		});
+		await this.db.query(
+			`INSERT INTO setup_commands
+       (id, type, parent_id, commands, enabled, name, description, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+       ON CONFLICT (id) DO UPDATE SET
+         type = EXCLUDED.type,
+         parent_id = EXCLUDED.parent_id,
+         commands = EXCLUDED.commands,
+         enabled = EXCLUDED.enabled,
+         name = EXCLUDED.name,
+         description = EXCLUDED.description,
+         updated_at = CURRENT_TIMESTAMP`,
+			[
+				command.id,
+				command.type,
+				command.parentId,
+				JSON.stringify(command.commands),
+				command.enabled,
+				command.name || null,
+				command.description || null,
+			],
+		);
 	}
 
 	async getSetupCommands(
@@ -981,55 +950,53 @@ export class DatabaseService {
 		if (this.disabled) return [];
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			let query = `
-        SELECT
-          id, type, parent_id, commands, enabled, name, description,
-          created_at, updated_at
-        FROM setup_commands
-      `;
-			const params: any[] = [];
+		let query = `
+      SELECT
+        id, type, parent_id, commands, enabled, name, description,
+        created_at, updated_at
+      FROM setup_commands
+    `;
+		const params: any[] = [];
+		const conditions: string[] = [];
 
-			if (type && parentId) {
-				query += " WHERE type = ? AND parent_id = ?";
-				params.push(type, parentId);
-			} else if (type) {
-				query += " WHERE type = ?";
-				params.push(type);
-			} else if (parentId) {
-				query += " WHERE parent_id = ?";
-				params.push(parentId);
+		if (type && parentId) {
+			conditions.push("type = $1 AND parent_id = $2");
+			params.push(type, parentId);
+		} else if (type) {
+			conditions.push("type = $1");
+			params.push(type);
+		} else if (parentId) {
+			conditions.push("parent_id = $1");
+			params.push(parentId);
+		}
+
+		if (conditions.length > 0) {
+			query += " WHERE " + conditions.join(" AND ");
+		}
+
+		query += " ORDER BY created_at DESC";
+
+		const result = await this.db.query(query, params);
+
+		return result.rows.map((row: any) => {
+			let commandsArray: string[] = [];
+			try {
+				commandsArray = JSON.parse(row.commands);
+			} catch (parseError) {
+				console.warn("Failed to parse setup commands for", row.id, parseError);
 			}
 
-			query += " ORDER BY created_at DESC";
-
-			this.db!.all(query, params, (err, rows: any[]) => {
-				if (err) {
-					reject(err);
-				} else {
-					const commands = rows.map((row) => {
-						let commandsArray: string[] = [];
-						try {
-							commandsArray = JSON.parse(row.commands);
-						} catch (parseError) {
-							console.warn("Failed to parse setup commands for", row.id, parseError);
-						}
-
-						return {
-							id: row.id,
-							type: row.type as "global" | "project" | "workspace",
-							parentId: row.parent_id,
-							commands: commandsArray,
-							enabled: !!row.enabled,
-							name: row.name,
-							description: row.description,
-							createdAt: row.created_at,
-							updatedAt: row.updated_at,
-						};
-					});
-					resolve(commands);
-				}
-			});
+			return {
+				id: row.id,
+				type: row.type as "global" | "project" | "workspace",
+				parentId: row.parent_id,
+				commands: commandsArray,
+				enabled: !!row.enabled,
+				name: row.name,
+				description: row.description,
+				createdAt: row.created_at,
+				updatedAt: row.updated_at,
+			};
 		});
 	}
 
@@ -1037,19 +1004,7 @@ export class DatabaseService {
 		if (this.disabled) return;
 		if (!this.db) throw new Error("Database not initialized");
 
-		return new Promise((resolve, reject) => {
-			this.db!.run(
-				"DELETE FROM setup_commands WHERE id = ?",
-				[id],
-				(err) => {
-					if (err) {
-						reject(err);
-					} else {
-						resolve();
-					}
-				},
-			);
-		});
+		await this.db.query("DELETE FROM setup_commands WHERE id = $1", [id]);
 	}
 
 	// Get all setup commands for a workspace (including inherited from project and global)

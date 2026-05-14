@@ -8,7 +8,7 @@ type Props = {
 };
 
 const Cmd: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs text-foreground">
+  <code className="rounded bg-muted px-1 py-0.5 font-mono-custom text-xs text-foreground">
     {children}
   </code>
 );

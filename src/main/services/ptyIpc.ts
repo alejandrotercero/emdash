@@ -59,11 +59,17 @@ export function registerPtyIpc(): void {
         if (!listeners.has(id)) {
           proc.onData((data) => {
             appendBuffer(id, data);
-            owners.get(id)?.send(`pty:data:${id}`, data);
+            const wc = owners.get(id);
+            if (wc && !wc.isDestroyed()) {
+              wc.send(`pty:data:${id}`, data);
+            }
           });
 
           proc.onExit(({ exitCode, signal }) => {
-            owners.get(id)?.send(`pty:exit:${id}`, { exitCode, signal });
+            const wc = owners.get(id);
+            if (wc && !wc.isDestroyed()) {
+              wc.send(`pty:exit:${id}`, { exitCode, signal });
+            }
             owners.delete(id);
             listeners.delete(id);
             buffers.delete(id);

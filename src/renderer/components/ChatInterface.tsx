@@ -17,6 +17,7 @@ import ProviderBar from "./ProviderBar";
 import { TerminalModeBanner } from "./TerminalModeBanner";
 import { TerminalPane } from "./TerminalPane";
 import { WorkspaceNotice } from "./WorkspaceNotice";
+import type { CliProviderStatus } from "../types/connections";
 
 declare const window: Window & {
 	electronAPI: {
@@ -40,6 +41,7 @@ interface Props {
 	projectName: string;
 	className?: string;
 	initialProvider?: Provider;
+	detectedProviders?: CliProviderStatus[];
 }
 
 const ChatInterface: React.FC<Props> = ({
@@ -47,6 +49,7 @@ const ChatInterface: React.FC<Props> = ({
 	projectName,
 	className,
 	initialProvider,
+	detectedProviders,
 }) => {
 	const { toast } = useToast();
 	const { effectiveTheme } = useTheme();

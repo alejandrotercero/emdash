@@ -20,14 +20,13 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				mono: [
-					'"IosevkaTerm Nerd Font"',
-					"ui-monospace",
-					"SFMono-Regular",
-					"Monaco",
-					"Consolas",
-					"monospace",
+				sans: [
+					'"Outfit"',
+					"system-ui",
+					"-apple-system",
+					"sans-serif",
 				],
+				mono: ['"Ioskeley Mono"', "monospace"],
 			},
 			colors: {
 				border: "hsl(var(--border))",

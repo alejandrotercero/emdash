@@ -23,7 +23,7 @@ export function createMainWindow(): BrowserWindow {
   });
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:3000');
+    mainWindow.loadURL('http://localhost:5173');
   } else {
     // renderer build outputs to dist/renderer
     mainWindow.loadFile(join(__dirname, '..', '..', 'renderer', 'index.html'));

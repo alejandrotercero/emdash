@@ -43,11 +43,28 @@ export class AgentService extends EventEmitter {
 		if (w && !w.destroyed) w.write(data);
 	}
 
-	private async resolveClaudePath(): Promise<string | null> {
+	private async resolveClaudePath(customClaudeConfigId?: string): Promise<string | null> {
 		const { existsSync, readdirSync } = require("fs");
 		const { homedir } = require("os");
 		const path = require("path");
 		const home = homedir();
+
+		// Check for custom binary path from config first
+		if (customClaudeConfigId) {
+			try {
+				const config =
+					await databaseService.getCustomClaudeConfig(customClaudeConfigId);
+				if (config?.binaryPath) {
+					if (existsSync(config.binaryPath)) {
+						console.log("[AgentService] Using custom binary path from config:", config.binaryPath);
+						return config.binaryPath;
+					}
+					console.warn("[AgentService] Custom binary path not found on disk:", config.binaryPath);
+				}
+			} catch (error) {
+				console.error("[AgentService] Failed to load config for binary path resolution:", error);
+			}
+		}
 
 		const candidatePaths: string[] = [];
 
@@ -204,6 +221,27 @@ export class AgentService extends EventEmitter {
 		return env;
 	}
 
+	private async getClaudeBinaryVersion(binaryPath: string): Promise<string | null> {
+		try {
+			const { stdout, stderr } = await execFileAsync(binaryPath, ["--version"]);
+			const output = stdout || stderr;
+			if (!output) return null;
+			const match = output.match(/\d+\.\d+(\.\d+)?/);
+			return match ? match[0] : null;
+		} catch {
+			return null;
+		}
+	}
+
+	async detectBinaryVersion(binaryPath: string): Promise<{ version?: string; exists: boolean }> {
+		const { existsSync } = require("fs");
+		if (!existsSync(binaryPath)) {
+			return { exists: false };
+		}
+		const version = await this.getClaudeBinaryVersion(binaryPath);
+		return { exists: true, version: version || undefined };
+	}
+
 	async startStream(opts: AgentStartOptions): Promise<void> {
 		const {
 			providerId,
@@ -340,7 +378,7 @@ export class AgentService extends EventEmitter {
 
 			if (!usedSdk) {
 				// CLI fallback with streaming JSON and safe edit tools
-				const claudePath = await this.resolveClaudePath();
+				const claudePath = await this.resolveClaudePath(customClaudeConfigId);
 				if (!claudePath) {
 					const err = "Claude CLI not found in PATH";
 					this.append(providerId, workspaceId, `\n[ERROR] ${err}\n`);

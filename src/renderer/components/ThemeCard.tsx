@@ -1,32 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTheme } from '../hooks/useTheme';
-import { useFont } from '../hooks/useFont';
-import { Sun, Moon, Monitor, Type, Check } from 'lucide-react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
+import { Sun, Moon, Monitor } from 'lucide-react';
 
 const ThemeCard: React.FC = () => {
   const { theme, setTheme } = useTheme();
-  const { font, setFont } = useFont();
-  const [fontInput, setFontInput] = useState(font);
 
   const themeOptions = [
     { value: 'light' as const, label: 'Light', icon: Sun },
     { value: 'dark' as const, label: 'Dark', icon: Moon },
     { value: 'system' as const, label: 'System', icon: Monitor },
   ];
-
-  const applyFont = () => {
-    if (fontInput.trim()) {
-      setFont(fontInput.trim());
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      applyFont();
-    }
-  };
 
   return (
     <div className="grid gap-4">
@@ -55,33 +38,6 @@ const ThemeCard: React.FC = () => {
               <span>{label}</span>
             </button>
           ))}
-        </div>
-      </div>
-
-      <div className="grid gap-3">
-        <div>
-          <div className="text-sm font-medium text-foreground">Font Family</div>
-          <div className="text-xs text-muted-foreground">
-            Enter a system font name (e.g., "SF Pro", "Inter", "Roboto") or use "Rawest" for the default.
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <Input
-              value={fontInput}
-              onChange={(e) => setFontInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="system-ui"
-              className="w-full"
-            />
-          </div>
-          <Button onClick={applyFont} size="sm" className="gap-2">
-            <Check className="h-4 w-4" />
-            Apply
-          </Button>
-        </div>
-        <div className="text-xs text-muted-foreground">
-          Current: <span className="font-mono bg-muted px-1 py-0.5 rounded">{font || 'system-ui'}</span>
         </div>
       </div>
     </div>

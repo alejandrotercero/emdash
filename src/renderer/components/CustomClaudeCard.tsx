@@ -14,7 +14,52 @@ interface CustomClaudeConfig {
 	smallFastModel?: string;
 	authToken?: string;
 	disableNonessentialTraffic: boolean;
+	binaryPath?: string;
 }
+
+const BinaryVersionBadge: React.FC<{ binaryPath: string }> = ({ binaryPath }) => {
+	const [version, setVersion] = useState<string | null>(null);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState(false);
+
+	useEffect(() => {
+		let cancelled = false;
+		if (!binaryPath?.trim()) return;
+
+		setLoading(true);
+		setError(false);
+		setVersion(null);
+
+		(async () => {
+			try {
+				const result = await (window as any).electronAPI.detectClaudeBinaryVersion(binaryPath);
+				if (cancelled) return;
+				if (result.success && result.exists && result.version) {
+					setVersion(result.version);
+				} else if (result.success && !result.exists) {
+					setError(true);
+				}
+			} catch {
+				if (!cancelled) setError(true);
+			} finally {
+				if (!cancelled) setLoading(false);
+			}
+		})();
+
+		return () => { cancelled = true; };
+	}, [binaryPath]);
+
+	if (loading) {
+		return <span className="text-xs text-muted-foreground">Detecting version...</span>;
+	}
+	if (version) {
+		return <span className="text-xs text-green-600">v{version}</span>;
+	}
+	if (error) {
+		return <span className="text-xs text-red-500">Binary not found or invalid</span>;
+	}
+	return null;
+};
 
 const CustomClaudeCard: React.FC = () => {
 	const [configs, setConfigs] = useState<CustomClaudeConfig[]>([]);
@@ -26,6 +71,7 @@ const CustomClaudeCard: React.FC = () => {
 		model: "",
 		smallFastModel: "",
 		authToken: "",
+		binaryPath: "",
 		disableNonessentialTraffic: true,
 	});
 
@@ -58,6 +104,7 @@ const CustomClaudeCard: React.FC = () => {
 				model: formData.model || undefined,
 				smallFastModel: formData.smallFastModel || undefined,
 				authToken: formData.authToken || undefined,
+				binaryPath: formData.binaryPath || undefined,
 				disableNonessentialTraffic: formData.disableNonessentialTraffic ?? true,
 			};
 
@@ -96,6 +143,17 @@ const CustomClaudeCard: React.FC = () => {
 		}
 	};
 
+	const handleBrowseBinary = async () => {
+		try {
+			const result = await (window as any).electronAPI.selectClaudeBinary();
+			if (result.success && result.filePath) {
+				setFormData({ ...formData, binaryPath: result.filePath });
+			}
+		} catch (error) {
+			console.error("Failed to select binary:", error);
+		}
+	};
+
 	const handleEdit = (config: CustomClaudeConfig) => {
 		setEditingId(config.id);
 		setFormData({
@@ -104,6 +162,7 @@ const CustomClaudeCard: React.FC = () => {
 			model: config.model || "",
 			smallFastModel: config.smallFastModel || "",
 			authToken: config.authToken || "",
+			binaryPath: config.binaryPath || "",
 			disableNonessentialTraffic: config.disableNonessentialTraffic,
 		});
 		setIsAdding(true);
@@ -157,6 +216,13 @@ const CustomClaudeCard: React.FC = () => {
 								{config.authToken && (
 									<div>
 										<span className="font-medium">Auth Token:</span> ••••••••
+									</div>
+								)}
+								{config.binaryPath && (
+									<div className="flex items-center gap-2">
+										<span className="font-medium">Binary:</span>
+										<span className="truncate max-w-[200px]">{config.binaryPath}</span>
+										<BinaryVersionBadge binaryPath={config.binaryPath} />
 									</div>
 								)}
 								{config.disableNonessentialTraffic && (
@@ -226,6 +292,40 @@ const CustomClaudeCard: React.FC = () => {
 									placeholder="My Custom Claude"
 									className="mt-1"
 								/>
+							</div>
+
+							<div>
+								<label
+									htmlFor="config-binary-path"
+									className="text-xs font-medium text-muted-foreground"
+								>
+									Claude Binary Path
+								</label>
+								<div className="mt-1 flex gap-2">
+									<Input
+										id="config-binary-path"
+										type="text"
+										value={formData.binaryPath}
+										onChange={(e) =>
+											setFormData({ ...formData, binaryPath: e.target.value })
+										}
+										placeholder="/usr/local/bin/claude"
+										className="flex-1"
+									/>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={handleBrowseBinary}
+									>
+										Browse
+									</Button>
+								</div>
+								{formData.binaryPath && (
+									<div className="mt-1">
+										<BinaryVersionBadge binaryPath={formData.binaryPath} />
+									</div>
+								)}
 							</div>
 
 							<div>

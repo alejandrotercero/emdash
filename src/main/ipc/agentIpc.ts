@@ -17,6 +17,19 @@ export function registerAgentIpc() {
 		},
 	);
 
+	// Detect binary version
+	ipcMain.handle(
+		"claude:detect-binary-version",
+		async (_e, binaryPath: string) => {
+			try {
+				const result = await agentService.detectBinaryVersion(binaryPath);
+				return { success: true, ...result };
+			} catch (e: any) {
+				return { success: false, error: e?.message || String(e) };
+			}
+		},
+	);
+
 	// Installation instructions
 	ipcMain.handle(
 		"agent:get-installation-instructions",

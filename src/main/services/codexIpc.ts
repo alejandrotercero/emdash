@@ -137,7 +137,9 @@ export function setupCodexIpc() {
     // Broadcast to all renderer processes
     const windows = require('electron').BrowserWindow.getAllWindows();
     windows.forEach((window: any) => {
-      window.webContents.send('codex:stream-output', data);
+      if (!window.webContents.isDestroyed()) {
+        window.webContents.send('codex:stream-output', data);
+      }
     });
   });
 
@@ -145,7 +147,9 @@ export function setupCodexIpc() {
     // Broadcast to all renderer processes
     const windows = require('electron').BrowserWindow.getAllWindows();
     windows.forEach((window: any) => {
-      window.webContents.send('codex:stream-error', data);
+      if (!window.webContents.isDestroyed()) {
+        window.webContents.send('codex:stream-error', data);
+      }
     });
   });
 
@@ -153,7 +157,9 @@ export function setupCodexIpc() {
     // Broadcast to all renderer processes
     const windows = require('electron').BrowserWindow.getAllWindows();
     windows.forEach((window: any) => {
-      window.webContents.send('codex:stream-complete', data);
+      if (!window.webContents.isDestroyed()) {
+        window.webContents.send('codex:stream-complete', data);
+      }
     });
   });
 

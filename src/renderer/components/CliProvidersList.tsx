@@ -87,7 +87,7 @@ export const BASE_CLI_PROVIDERS: CliProviderStatus[] = [
     id: 'kimi',
     name: 'Kimi',
     status: 'missing',
-    docUrl: 'https://kimi.com',
+    docUrl: 'https://github.com/MoonshotAI/kimi-cli',
   },
 ];
 

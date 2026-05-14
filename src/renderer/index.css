@@ -1,11 +1,33 @@
+@import "@fontsource/outfit";
 @import "@xterm/xterm/css/xterm.css";
 
 /* Custom fonts */
 @font-face {
-	font-family: "Paper Mono";
-	src: url("../assets/PaperMono-Regular.woff2") format("woff2");
-	font-weight: normal;
+	font-family: "Ioskeley Mono";
+	src: url("assets/fonts/IoskeleyMonoNerdFont-Condensed.ttf") format("truetype");
+	font-weight: 400;
 	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: "Ioskeley Mono";
+	src: url("assets/fonts/IoskeleyMonoNerdFont-CondensedBold.ttf") format("truetype");
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: "Ioskeley Mono";
+	src: url("assets/fonts/IoskeleyMonoNerdFont-CondensedItalic.ttf") format("truetype");
+	font-weight: 400;
+	font-style: italic;
+	font-display: swap;
+}
+@font-face {
+	font-family: "Ioskeley Mono";
+	src: url("assets/fonts/IoskeleyMonoNerdFont-CondensedBoldItalic.ttf") format("truetype");
+	font-weight: 700;
+	font-style: italic;
 	font-display: swap;
 }
 
@@ -83,14 +105,14 @@
 @layer base {
 	* {
 		@apply border-border;
-		font-family: var(--ui-font-family, "Rawest"), "system-ui", "-apple-system", sans-serif;
+		font-family: var(--ui-font-family, "Outfit"), "system-ui", "-apple-system", sans-serif;
 	}
 	body {
 		@apply bg-background text-foreground;
 	}
 
 	/* Font family utilities */
-	.font-rawest { font-family: "Rawest", "system-ui", "-apple-system", sans-serif !important; }
+	.font-outfit { font-family: "Outfit", "system-ui", "-apple-system", sans-serif !important; }
 	.font-system { font-family: "system-ui", "-apple-system", sans-serif !important; }
 	.font-inter { font-family: "Inter", "system-ui", sans-serif !important; }
 	.font-sfpro { font-family: "-apple-system", "BlinkMacSystemFont", "SF Pro Display", "SF Pro Text", sans-serif !important; }
@@ -100,10 +122,11 @@
 	.font-ubuntu { font-family: "Ubuntu", "system-ui", sans-serif !important; }
 	.font-cantarell { font-family: "Cantarell", "system-ui", sans-serif !important; }
 	.font-apple { font-family: "-apple-system", "BlinkMacSystemFont", sans-serif !important; }
+	.font-mono-custom { font-family: "Ioskeley Mono", monospace !important; }
 
 	/* Dynamic font via CSS custom property */
 	:root {
-		--ui-font-family: "Rawest";
+		--ui-font-family: "Outfit";
 	}
 
 	/* Scrollbar styles for light and dark mode */
@@ -256,8 +279,8 @@
 }
 
 .xterm-screen * {
-	font-family: "Iosevka", monospace;
-	font-size: 0.75rem;
-	line-height: 1em;
-	letter-spacing: -0.02em;
+	font-family: "Ioskeley Mono", monospace;
+	font-size: 0.85rem;
+	line-height: .75rem;
+	letter-spacing: -0.05em;
 }

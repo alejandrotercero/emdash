@@ -62,13 +62,13 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ workspace, className, ...re
           <div className="flex h-full flex-col">
             {/* Collapsible File Changes Panel */}
             <div className={cn("flex flex-col", changesCollapsed ? "min-h-0" : "min-h-0 flex-none border-b border-border")}>
-              <div className="flex items-center justify-between bg-gray-50 px-3 py-1.5 dark:bg-gray-900">
+              <div className="flex items-center justify-between bg-neutral-50 px-3 py-1.5 dark:bg-neutral-900">
                 <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => setChangesCollapsed(!changesCollapsed)}
-                    className="h-6 w-6 p-0 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    className="h-6 w-6 p-0 hover:bg-neutral-200 dark:hover:bg-neutral-700"
                     title={changesCollapsed ? "Show changes" : "Hide changes"}
                   >
                     {changesCollapsed ? (
@@ -79,28 +79,28 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ workspace, className, ...re
                   </Button>
                   {hasChanges ? (
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                         {fileChanges.length} files changed
                       </span>
                       <div className="flex items-center space-x-1 text-xs">
                         <span className="font-medium text-green-600 dark:text-green-400">
                           +{totalChanges.additions}
                         </span>
-                        <span className="text-gray-400">•</span>
+                        <span className="text-neutral-400">•</span>
                         <span className="font-medium text-red-600 dark:text-red-400">
                           -{totalChanges.deletions}
                         </span>
                       </div>
                     </div>
                   ) : (
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">No changes</span>
+                    <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">No changes</span>
                   )}
                 </div>
                 {pr ? (
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-5 border-gray-200 px-1.5 text-[11px] text-gray-700 dark:border-gray-700 dark:text-gray-200"
+                    className="h-5 border-neutral-200 px-1.5 text-[11px] text-neutral-700 dark:border-neutral-700 dark:text-neutral-200"
                     disabled={isCreatingPR}
                     title="Commit all changes and create a pull request"
                     onClick={async () => {
@@ -122,7 +122,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ workspace, className, ...re
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-5 border-gray-200 px-1.5 text-[11px] text-gray-700 dark:border-gray-700 dark:text-gray-200"
+                      className="h-5 border-neutral-200 px-1.5 text-[11px] text-neutral-700 dark:border-neutral-700 dark:text-neutral-200"
                       disabled={isCreatingPR}
                       title="Commit all changes and create a pull request"
                       onClick={async () => {
@@ -147,18 +147,18 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ workspace, className, ...re
                 />
               )}
             </div>
-            
+
             {/* Terminal Panel - expands to fill remaining space when changes are collapsed */}
-            <WorkspaceTerminalPanel 
-              workspace={workspace} 
-              className={cn("min-h-0", changesCollapsed ? "flex-1" : "flex-1")} 
+            <WorkspaceTerminalPanel
+              workspace={workspace}
+              className={cn("min-h-0", changesCollapsed ? "flex-1" : "flex-1")}
             />
           </div>
         ) : (
           <div className="flex h-full flex-col text-sm text-muted-foreground">
             {/* Empty state for changes */}
             <div className="flex flex-col border-b border-border">
-              <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 dark:bg-gray-900">
+              <div className="flex items-center gap-2 bg-neutral-50 px-3 py-2 dark:bg-neutral-900">
                 <ChevronRight className="h-4 w-4" />
                 <span className="text-sm font-medium text-foreground">Changes</span>
               </div>
@@ -170,7 +170,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ workspace, className, ...re
             </div>
             {/* Empty state for terminal */}
             <div className="flex flex-1 flex-col bg-background">
-              <div className="border-b border-border bg-gray-50 px-3 py-1.5 text-sm font-medium text-foreground dark:bg-gray-900">
+              <div className="border-b border-border bg-neutral-50 px-3 py-1.5 text-sm font-medium text-foreground dark:bg-neutral-900">
                 <span className="whitespace-nowrap">Terminal</span>
               </div>
               <div className="flex flex-1 items-center justify-center px-4 py-4 text-center">

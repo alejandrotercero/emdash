@@ -205,8 +205,8 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
     const base = last >= 0 ? p.slice(last + 1) : p;
     return (
       <span className="truncate">
-        {dir && <span className="text-gray-500 dark:text-gray-400">{dir}</span>}
-        <span className="font-medium text-gray-900 dark:text-gray-100">{base}</span>
+        {dir && <span className="text-neutral-500 dark:text-neutral-400">{dir}</span>}
+        <span className="font-medium text-neutral-900 dark:text-neutral-100">{base}</span>
       </span>
     );
   };
@@ -222,7 +222,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
   return (
     <div className={`flex h-full flex-col bg-white shadow-sm dark:bg-black ${className}`}>
       {hasStagedChanges && (
-        <div className="bg-gray-50 px-3 py-1.5 dark:bg-gray-900">
+        <div className="bg-neutral-50 px-3 py-1.5 dark:bg-neutral-900">
           <div className="flex items-center space-x-2">
             <Input
               placeholder="Enter commit message..."
@@ -239,7 +239,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
             <Button
               variant="outline"
               size="sm"
-              className="h-7 border-gray-200 px-2 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-200"
+              className="h-7 border-neutral-200 px-2 text-xs text-neutral-700 dark:border-neutral-700 dark:text-neutral-200"
               title="Commit all staged changes and push the branch"
               onClick={handleCommitAndPush}
               disabled={isCommitting || !commitMessage.trim()}
@@ -253,8 +253,8 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
         {fileChanges.map((change, index) => (
           <div
             key={index}
-            className={`flex cursor-pointer items-center justify-between border-b border-gray-100 px-3 py-1.5 last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-900/40 ${
-              change.isStaged ? 'bg-gray-50 dark:bg-gray-900/40' : ''
+            className={`flex cursor-pointer items-center justify-between border-b border-neutral-100 px-3 py-1.5 last:border-b-0 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900/40 ${
+              change.isStaged ? 'bg-neutral-50 dark:bg-neutral-900/40' : ''
             }`}
             onClick={() => {
               setSelectedPath(change.path);
@@ -262,7 +262,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
             }}
           >
             <div className="flex min-w-0 flex-1 items-center gap-3">
-              <span className="inline-flex h-4 w-4 items-center justify-center text-gray-500">
+              <span className="inline-flex h-4 w-4 items-center justify-center text-neutral-500">
                 <FileTypeIcon
                   path={change.path}
                   type={change.status === 'deleted' ? 'file' : 'file'}
@@ -289,7 +289,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 text-gray-500 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-gray-900/20 dark:hover:text-gray-400"
+                    className="h-6 w-6 text-neutral-500 hover:bg-neutral-50 hover:text-neutral-600 dark:hover:bg-neutral-900/20 dark:hover:text-neutral-400"
                     onClick={(e) => handleStageFile(change.path, e)}
                     disabled={stagingFiles.has(change.path)}
                     title="Stage file for commit"
@@ -304,7 +304,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 text-gray-500 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-gray-900/20 dark:hover:text-gray-400"
+                  className="h-6 w-6 text-neutral-500 hover:bg-neutral-50 hover:text-neutral-600 dark:hover:bg-neutral-900/20 dark:hover:text-neutral-400"
                   onClick={(e) => handleRevertFile(change.path, e)}
                   disabled={revertingFiles.has(change.path)}
                   title={

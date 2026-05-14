@@ -44,7 +44,7 @@ interface Workspace {
 function PrStateBadge({
   pr,
 }: {
-  pr: { isDraft: boolean; state: string; number: number; title?: string };
+  pr: { isDraft?: boolean; state: string; number: number; title?: string };
 }) {
   const label = pr.isDraft ? 'draft' : pr.state.toLowerCase();
   const cls =
@@ -133,7 +133,7 @@ function WorkspaceRow({
         <div className="mt-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
           {isRunning || ws.status === 'running' ? <Spinner size="sm" className="size-3" /> : null}
           <GitBranch className="size-3" />
-          <span className="max-w-[24rem] truncate font-mono" title={`origin/${ws.branch}`}>
+          <span className="max-w-[24rem] truncate font-mono-custom" title={`origin/${ws.branch}`}>
             origin/{ws.branch}
           </span>
           {project.gitInfo.isGitRepo && (
