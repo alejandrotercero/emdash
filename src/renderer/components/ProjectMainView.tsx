@@ -41,11 +41,25 @@ interface Workspace {
   worktreeType?: 'worktree' | 'main';
 }
 
-function StatusBadge({ status }: { status: Workspace['status'] }) {
+function PrStateBadge({
+  pr,
+}: {
+  pr: { isDraft: boolean; state: string; number: number; title?: string };
+}) {
+  const label = pr.isDraft ? 'draft' : pr.state.toLowerCase();
+  const cls =
+    pr.isDraft || pr.state === 'CLOSED'
+      ? 'border-border bg-muted text-muted-foreground'
+      : pr.state === 'MERGED'
+        ? 'border-purple-300 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300'
+        : 'border-green-300 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-300';
   return (
-    <Badge variant="secondary" className="capitalize">
-      {status}
-    </Badge>
+    <span
+      className={`rounded border px-1.5 py-0.5 text-xs ${cls}`}
+      title={`${pr.title || 'Pull Request'} (#${pr.number})`}
+    >
+      {label}
+    </span>
   );
 }
 
@@ -138,12 +152,7 @@ function WorkspaceRow({
         {!isLoading && (totalAdditions > 0 || totalDeletions > 0) ? (
           <ChangesBadge additions={totalAdditions} deletions={totalDeletions} />
         ) : pr && ws.worktreeType !== 'main' ? (
-          <span
-            className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
-            title={`${pr.title || 'Pull Request'} (#${pr.number})`}
-          >
-            {pr.isDraft ? 'draft' : pr.state.toLowerCase()}
-          </span>
+          <PrStateBadge pr={pr} />
         ) : null}
         {ws.agentId && <Badge variant="outline">agent</Badge>}
         {project.gitInfo.isGitRepo && (
@@ -168,7 +177,7 @@ function WorkspaceRow({
                 setIsDeleting(false);
               }
             }}
-            className="inline-flex items-center justify-center rounded p-2 text-muted-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-0"
+            className="inline-flex items-center justify-center rounded p-2 text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
             title="Remove from app (files not deleted)"
             aria-label={`Remove workspace ${ws.name}`}
           >
@@ -182,13 +191,12 @@ function WorkspaceRow({
                 setIsDeleting(true);
                 await onDelete();
               } finally {
-                // If deletion succeeds, this row will unmount; if it fails, revert spinner
                 setIsDeleting(false);
               }
             }}
             isDeleting={isDeleting}
             aria-label={`Delete workspace ${ws.name}`}
-            className="inline-flex items-center justify-center rounded p-2 text-muted-foreground hover:bg-transparent hover:text-destructive focus-visible:ring-0"
+            className="inline-flex items-center justify-center rounded p-2 text-muted-foreground hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
           />
         )}
       </div>

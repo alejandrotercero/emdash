@@ -207,7 +207,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                           <div className="flex w-full min-w-0 items-center rounded-md px-2 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
                             <button
                               type="button"
-                              className="flex min-w-0 flex-1 flex-col bg-transparent text-left outline-none focus-visible:outline-none"
+                              className="flex min-w-0 flex-1 flex-col rounded bg-transparent text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onSelectProject(typedProject);
@@ -283,7 +283,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className="border-t border-gray-200 px-2 py-1 dark:border-gray-800 sm:px-3 sm:py-1.5">
+        <SidebarFooter className="border-t border-border px-2 py-1 sm:px-3 sm:py-1.5">
           <SidebarMenu className="w-full">
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -295,7 +295,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                   e.preventDefault();
                   handleGithubProfileClick();
                 }}
-                className={`flex w-full items-center justify-start gap-2 px-2 py-1.5 text-sm text-muted-foreground focus-visible:outline-none focus-visible:ring-0 ${
+                className={`flex w-full items-center justify-start gap-2 px-2 py-1.5 text-sm text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring ${
                   githubProfileUrl
                     ? 'hover:bg-black/5 dark:hover:bg-white/5'
                     : 'cursor-default hover:bg-transparent'

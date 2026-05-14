@@ -6,13 +6,8 @@
 body {
   margin: 0;
   padding: 0;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell',
-    'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #000000;
-  color: #ffffff;
   overflow: hidden;
 }
 
@@ -22,30 +17,6 @@ body {
 #root {
   height: 100vh;
   width: 100vw;
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #000000;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #2e2e2e;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #404040;
-}
-
-/* Utility classes */
-.flex {
-  display: flex;
 }
 
 /* Shimmer text effect for thinking action lines */
@@ -69,127 +40,4 @@ body {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: shimmer-move 1.4s linear infinite;
-}
-
-.flex-col {
-  flex-direction: column;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.justify-center {
-  justify-content: center;
-}
-
-.justify-between {
-  justify-content: space-between;
-}
-
-.gap-2 {
-  gap: 0.5rem;
-}
-
-.gap-4 {
-  gap: 1rem;
-}
-
-.p-4 {
-  padding: 1rem;
-}
-
-.p-6 {
-  padding: 1.5rem;
-}
-
-.text-sm {
-  font-size: 0.875rem;
-}
-
-.text-lg {
-  font-size: 1.125rem;
-}
-
-.text-xl {
-  font-size: 1.25rem;
-}
-
-.text-2xl {
-  font-size: 1.5rem;
-}
-
-.font-bold {
-  font-weight: bold;
-}
-
-.text-neutral-400 {
-  color: #a3a3a3;
-}
-
-.text-neutral-500 {
-  color: #737373;
-}
-
-.bg-neutral-800 {
-  background-color: #0f0f0f;
-}
-
-.bg-neutral-900 {
-  background-color: #000000;
-}
-
-.border-neutral-700 {
-  border-color: #2e2e2e;
-}
-
-/* Legacy gray classes for compatibility */
-.text-gray-400 {
-  color: #a3a3a3;
-}
-
-.text-gray-500 {
-  color: #737373;
-}
-
-.bg-gray-800 {
-  background-color: #0f0f0f;
-}
-
-.bg-gray-900 {
-  background-color: #000000;
-}
-
-.border-gray-700 {
-  border-color: #2e2e2e;
-}
-
-.rounded {
-  border-radius: 0.25rem;
-}
-
-.rounded-lg {
-  border-radius: 0.5rem;
-}
-
-.border {
-  border-width: 1px;
-}
-
-.hover\:bg-gray-700:hover {
-  background-color: #1f1f1f;
-}
-
-.hover\:bg-neutral-700:hover {
-  background-color: #1f1f1f;
-}
-
-.cursor-pointer {
-  cursor: pointer;
-}
-
-.transition-colors {
-  transition-property: color, background-color, border-color;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
 }

@@ -7,6 +7,28 @@ import { Spinner } from './ui/spinner';
 import { usePrStatus } from '../hooks/usePrStatus';
 import { useWorkspaceBusy } from '../hooks/useWorkspaceBusy';
 
+function PrStateBadge({
+  pr,
+}: {
+  pr: { isDraft: boolean; state: string; number: number; title?: string };
+}) {
+  const label = pr.isDraft ? 'draft' : pr.state.toLowerCase();
+  const cls =
+    pr.isDraft || pr.state === 'CLOSED'
+      ? 'border-border bg-muted text-muted-foreground'
+      : pr.state === 'MERGED'
+        ? 'border-purple-300 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300'
+        : 'border-green-300 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-300';
+  return (
+    <span
+      className={`rounded border px-1.5 py-0.5 text-xs ${cls}`}
+      title={`${pr.title || 'Pull Request'} (#${pr.number})`}
+    >
+      {label}
+    </span>
+  );
+}
+
 interface Workspace {
   id: string;
   name: string;
@@ -51,14 +73,17 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({
           <span className="block truncate text-xs font-medium text-foreground">{workspace.name}</span>
           {workspace.agentId && <Bot className="h-3 w-3 flex-shrink-0 text-purple-500" />}
           {workspace.worktreeType === 'main' && (
-            <span className="text-[9px] px-1 py-0.5 rounded border border-green-200 text-green-700 bg-green-50 dark:border-green-800 dark:text-green-300 dark:bg-green-900/20 truncate max-w-[60px]" title={workspace.branch}>
+            <span
+              className="max-w-[60px] truncate rounded border border-green-300 bg-green-50 px-1 py-0.5 text-xs text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-300"
+              title={workspace.branch}
+            >
               {workspace.branch}
             </span>
           )}
         </div>
         {index && index <= 9 && (
-          <div className="flex items-center gap-1 mt-0.5 ml-5">
-            <span className="text-[8px] text-muted-foreground">⌘{index}</span>
+          <div className="ml-5 mt-0.5 flex items-center gap-1">
+            <span className="text-[10px] text-muted-foreground">⌘{index}</span>
           </div>
         )}
       </div>
@@ -83,12 +108,7 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({
                 className="inline-flex items-center justify-center rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
               />
             ) : null}
-            <span
-              className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
-              title={`${pr.title || 'Pull Request'} (#${pr.number})`}
-            >
-              {pr.isDraft ? 'draft' : pr.state.toLowerCase()}
-            </span>
+            <PrStateBadge pr={pr} />
           </div>
         ) : null}
 

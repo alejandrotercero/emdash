@@ -7,6 +7,12 @@ type Props = {
   showAgentRequirement: boolean;
 };
 
+const Cmd: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs text-foreground">
+    {children}
+  </code>
+);
+
 const RequirementsNotice: React.FC<Props> = ({
   showGithubRequirement,
   needsGhInstall,
@@ -14,20 +20,20 @@ const RequirementsNotice: React.FC<Props> = ({
   showAgentRequirement,
 }) => {
   return (
-    <div className="mx-auto max-w-2xl space-y-4 text-sm text-gray-500">
+    <div className="mx-auto max-w-2xl space-y-4 text-sm text-muted-foreground">
       {showGithubRequirement && (
-        <div>
-          <p className="mb-2">
-            <strong>Requirements:</strong> GitHub CLI
+        <div className="rounded-lg border border-border bg-card px-4 py-3 text-left">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Setup required
           </p>
           {needsGhInstall ? (
             <p className="text-xs">
-              Install: <code className="rounded bg-gray-100 px-1">brew install gh</code>
+              Install GitHub CLI: <Cmd>brew install gh</Cmd>
             </p>
           ) : (
             needsGhAuth && (
               <p className="text-xs">
-                Authenticate: <code className="rounded bg-gray-100 px-1">gh auth login</code>
+                Authenticate GitHub CLI: <Cmd>gh auth login</Cmd>
               </p>
             )
           )}
@@ -35,41 +41,35 @@ const RequirementsNotice: React.FC<Props> = ({
       )}
 
       {showAgentRequirement && (
-        <div className="space-y-2">
-          <p className="mb-1">
-            <strong>Requirements:</strong> Install at least one of the following CLIs
+        <div className="rounded-lg border border-border bg-card px-4 py-3 text-left">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Install an agent CLI
           </p>
-          <div className="space-y-2 text-xs">
+          <div className="space-y-2.5 text-xs">
             <div>
-              <span className="font-medium">Codex CLI</span>
-              <div>
-                Install:{' '}
-                <code className="rounded bg-gray-100 px-1">npm install -g @openai/codex</code>
-              </div>
-              <div>
-                Authenticate: <code className="rounded bg-gray-100 px-1">codex auth login</code>
+              <span className="font-medium text-foreground">Codex CLI</span>
+              <div className="mt-0.5 text-muted-foreground">
+                <Cmd>npm install -g @openai/codex</Cmd>
+                {' · '}
+                <Cmd>codex auth login</Cmd>
               </div>
             </div>
             <div>
-              <span className="font-medium">Claude Code CLI</span>
-              <div>
-                Install:{' '}
-                <code className="rounded bg-gray-100 px-1">
-                  npm install -g @anthropic-ai/claude-code
-                </code>
-              </div>
-              <div>
-                Login: <code className="rounded bg-gray-100 px-1">claude</code> then{' '}
-                <code className="rounded bg-gray-100 px-1">/login</code>
+              <span className="font-medium text-foreground">Claude Code CLI</span>
+              <div className="mt-0.5 text-muted-foreground">
+                <Cmd>npm install -g @anthropic-ai/claude-code</Cmd>
+                {' · then '}
+                <Cmd>claude</Cmd>
+                {' → '}
+                <Cmd>/login</Cmd>
               </div>
             </div>
             <div>
-              <span className="font-medium">Factory CLI (Droid)</span>
-              <div>
-                Quickstart:{' '}
+              <span className="font-medium text-foreground">Factory CLI (Droid)</span>
+              <div className="mt-0.5">
                 <button
                   type="button"
-                  className="underline"
+                  className="text-muted-foreground underline underline-offset-2 hover:text-foreground"
                   onClick={() =>
                     (window as any).electronAPI.openExternal?.(
                       'https://docs.factory.ai/cli/getting-started/quickstart'
@@ -81,12 +81,11 @@ const RequirementsNotice: React.FC<Props> = ({
               </div>
             </div>
             <div>
-              <span className="font-medium">Gemini CLI</span>
-              <div>
-                Project:{' '}
+              <span className="font-medium text-foreground">Gemini CLI</span>
+              <div className="mt-0.5">
                 <button
                   type="button"
-                  className="underline"
+                  className="text-muted-foreground underline underline-offset-2 hover:text-foreground"
                   onClick={() =>
                     (window as any).electronAPI.openExternal?.(
                       'https://github.com/google-gemini/gemini-cli'

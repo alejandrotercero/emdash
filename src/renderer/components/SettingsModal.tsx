@@ -239,7 +239,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 						}
 						className="mx-4 w-full max-w-3xl overflow-hidden rounded-2xl border border-border/50 bg-background shadow-2xl"
 					>
-						<div className="flex h-[520px]">
+						<div className="flex min-h-[400px] max-h-[80vh]">
 							<aside className="w-60 border-r border-border/60 bg-muted/20 p-6">
 								<nav className="space-y-1">
 									{ORDERED_TABS.map((tab) => {

@@ -1099,11 +1099,13 @@ const AppContent: React.FC = () => {
 
   const renderMainContent = () => {
     if (showHomeView) {
+      const hasProjects = projects.length > 0;
       return (
         <div className="flex h-full flex-col overflow-y-auto bg-background text-foreground">
-          <div className="container mx-auto flex min-h-full flex-1 flex-col justify-center px-4 py-8">
-            <div className="mb-6 text-center">
-              <div className="mb-2 flex items-center justify-center">
+          <div className="container mx-auto flex min-h-full max-w-2xl flex-1 flex-col justify-center px-6 py-12">
+            {/* Logo */}
+            <div className="mb-10 text-center">
+              <div className="mb-3 flex items-center justify-center">
                 <div className="logo-shimmer-container">
                   <img
                     key={effectiveTheme}
@@ -1127,25 +1129,79 @@ const AppContent: React.FC = () => {
                   />
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground sm:text-base">
-                Run multiple Coding Agents in parallel
+              <p className="text-sm text-muted-foreground">
+                Run multiple coding agents in parallel
               </p>
-              <RequirementsNotice
-                showGithubRequirement={showGithubRequirement}
-                needsGhInstall={needsGhInstall}
-                needsGhAuth={needsGhAuth}
-                showAgentRequirement={showAgentRequirement}
-              />
             </div>
 
-            <div className="flex flex-col justify-center gap-4 sm:flex-row">
-              <Button onClick={handleOpenProject} size="lg" className="min-w-[200px]">
-                <FolderOpen className="mr-2 h-5 w-5" />
+            {/* Recent projects */}
+            {hasProjects && (
+              <div className="mb-6 space-y-2">
+                <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                  Recent Projects
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  {projects.slice(0, 6).map((project) => {
+                    const workspaceCount = project.workspaces?.length ?? 0;
+                    return (
+                      <button
+                        key={project.id}
+                        onClick={() => handleSelectProject(project)}
+                        className="group flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3 text-left transition-all hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium text-foreground">
+                            {project.name}
+                          </div>
+                          <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                            {project.path}
+                          </div>
+                        </div>
+                        <div className="ml-4 flex shrink-0 items-center gap-2">
+                          {project.gitInfo.branch && (
+                            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+                              {project.gitInfo.branch}
+                            </span>
+                          )}
+                          {workspaceCount > 0 && (
+                            <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                              {workspaceCount}
+                              {' '}
+                              {workspaceCount === 1 ? 'workspace' : 'workspaces'}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* CTA */}
+            <div className="flex justify-center">
+              <Button
+                onClick={handleOpenProject}
+                variant={hasProjects ? 'outline' : 'default'}
+                size="lg"
+                className="min-w-[180px]"
+              >
+                <FolderOpen className="mr-2 h-4 w-4" />
                 Open Project
               </Button>
             </div>
 
-            {null}
+            {/* Requirements — only when needed */}
+            {(showGithubRequirement || showAgentRequirement) && (
+              <div className="mt-10">
+                <RequirementsNotice
+                  showGithubRequirement={showGithubRequirement}
+                  needsGhInstall={needsGhInstall}
+                  needsGhAuth={needsGhAuth}
+                  showAgentRequirement={showAgentRequirement}
+                />
+              </div>
+            )}
           </div>
         </div>
       );
@@ -1177,40 +1233,7 @@ const AppContent: React.FC = () => {
       );
     }
 
-    return (
-      <div className="flex h-full flex-col overflow-y-auto bg-background text-foreground">
-        <div className="container mx-auto flex min-h-full flex-1 flex-col justify-center px-4 py-8">
-          <div className="mb-12 text-center">
-            <div className="mb-4 flex items-center justify-center">
-              <img
-                key={effectiveTheme}
-                src={effectiveTheme === 'dark' ? emdashLogoWhite : emdashLogo}
-                alt="emdash"
-                className="h-16"
-              />
-            </div>
-            <p className="mb-6 text-sm text-muted-foreground sm:text-base">
-              Run multiple Coding Agents in parallel
-            </p>
-            <RequirementsNotice
-              showGithubRequirement={showGithubRequirement}
-              needsGhInstall={needsGhInstall}
-              needsGhAuth={needsGhAuth}
-              showAgentRequirement={showAgentRequirement}
-            />
-          </div>
-
-          <div className="mb-8 flex flex-col justify-center gap-4 sm:flex-row">
-            <Button onClick={handleOpenProject} size="lg" className="min-w-[200px]">
-              <FolderOpen className="mr-2 h-5 w-5" />
-              Open Project
-            </Button>
-          </div>
-
-          {null}
-        </div>
-      </div>
-    );
+    return null;
   };
 
   return (

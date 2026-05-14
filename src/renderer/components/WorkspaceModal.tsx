@@ -139,7 +139,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
             transition={
               shouldReduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.22, 1, 0.36, 1] }
             }
-            className="mx-4 w-full max-w-md transform-gpu will-change-transform"
+            className="mx-4 w-full max-w-lg transform-gpu will-change-transform"
           >
             <Card className="relative w-full">
               <Button
@@ -233,9 +233,9 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                       </div>
 
                       {workspaceName && (
-                        <div className="flex items-center space-x-2 rounded-lg bg-gray-100 p-3 dark:bg-gray-700">
-                          <GitBranch className="h-4 w-4 flex-shrink-0 text-gray-500" />
-                          <span className="overflow-hidden break-all text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center space-x-2 rounded-lg bg-muted p-3">
+                          <GitBranch className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                          <span className="overflow-hidden break-all font-mono text-sm text-muted-foreground">
                             {convertToWorkspaceName(workspaceName)}
                           </span>
                         </div>
@@ -264,7 +264,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setWorktreeType('worktree')}
-                          className={`px-3 py-2 text-sm rounded-md border transition-colors ${
+                          className={`rounded-md border px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                             worktreeType === 'worktree'
                               ? 'border-primary bg-primary text-primary-foreground'
                               : 'border-border bg-background hover:bg-muted'
@@ -278,7 +278,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setWorktreeType('main')}
-                          className={`px-3 py-2 text-sm rounded-md border transition-colors ${
+                          className={`rounded-md border px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                             worktreeType === 'main'
                               ? 'border-primary bg-primary text-primary-foreground'
                               : 'border-border bg-background hover:bg-muted'
@@ -364,7 +364,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                   ? `e.g. Fix the attached Linear ticket ${selectedIssue.identifier} — describe any constraints.`
                                   : `e.g. Summarize the key problems and propose a plan.`
                               }
-                              className="min-h-[80px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                              className="min-h-[80px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                               rows={3}
                             />
                           </div>

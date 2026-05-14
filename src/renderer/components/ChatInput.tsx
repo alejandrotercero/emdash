@@ -71,9 +71,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onRemoveImage,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  // Provider is controlled by parent (codex | claude | droid | gemini | cursor | copilot)
   const shouldReduceMotion = useReducedMotion();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const isTerminalProvider =
+    provider === 'droid' ||
+    provider === 'gemini' ||
+    provider === 'cursor' ||
+    provider === 'copilot' ||
+    provider === 'amp' ||
+    provider === 'opencode';
 
   // File index for @ mention
   const { search } = useFileIndex(workspacePath);
@@ -226,17 +233,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           : true); // droid/gemini/cursor/copilot: input disabled, terminal-only
 
   const textareaDisabled = baseDisabled || isLoading;
-  const sendDisabled =
-    provider === 'droid' ||
-    provider === 'gemini' ||
-    provider === 'cursor' ||
-    provider === 'copilot' ||
-    provider === 'amp' ||
-    provider === 'opencode'
-      ? true
-      : isLoading
-        ? baseDisabled
-        : baseDisabled || !trimmedValue;
+  const sendDisabled = isTerminalProvider
+    ? true
+    : isLoading
+      ? baseDisabled
+      : baseDisabled || !trimmedValue;
 
   // Drag & drop images into the input area
   const handleDrop = (e: React.DragEvent) => {
@@ -264,8 +265,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     <div className="px-6 pb-6 pt-4" onDrop={handleDrop} onDragOver={handleDragOver}>
       <div className="mx-auto max-w-4xl">
         <div
-          className={`relative rounded-md border border-gray-200 bg-white transition-shadow duration-200 dark:border-neutral-700 dark:bg-neutral-900 ${
-            isFocused ? 'shadow-2xl' : 'shadow-lg'
+          className={`relative rounded-lg border bg-card transition-all duration-200 ${
+            isFocused
+              ? 'border-ring/40 shadow-lg ring-2 ring-ring/20'
+              : 'border-border shadow-sm hover:border-border/80'
           }`}
         >
           <div className="p-4">
@@ -274,13 +277,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 {imageAttachments.map((rel) => (
                   <div
                     key={rel}
-                    className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700"
+                    className="inline-flex items-center gap-2 rounded-md border border-border bg-muted px-2 py-1 text-xs"
                   >
                     <span className="max-w-[220px] truncate">{rel}</span>
                     <button
                       type="button"
                       aria-label="Remove image"
-                      className="text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
+                      className="text-muted-foreground transition-colors hover:text-foreground"
                       onClick={() => onRemoveImage?.(rel)}
                     >
                       ×
@@ -291,7 +294,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             )}
             <textarea
               ref={textareaRef}
-              className="w-full resize-none border-none bg-transparent text-sm text-gray-900 placeholder-gray-500 outline-none dark:text-gray-100 dark:placeholder-gray-400"
+              className="w-full resize-none border-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
               value={value}
               onChange={(e) => {
                 const next = e.target.value;
@@ -308,7 +311,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               style={{ minHeight: '56px' }}
             />
             {mentionOpen && mentionResults.length > 0 && (
-              <div className="absolute bottom-40 left-4 z-20 w-[520px] max-w-[calc(100%-2rem)] overflow-hidden rounded-md border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
+              <div className="absolute bottom-40 left-4 z-20 w-[520px] max-w-[calc(100%-2rem)] overflow-hidden rounded-md border border-border bg-popover shadow-xl">
                 <div className="max-h-64 overflow-y-auto">
                   {mentionResults.map((item, idx) => (
                     <button
@@ -318,25 +321,25 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         e.preventDefault();
                         applyMention(item.path);
                       }}
-                      className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                        idx === mentionIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
+                      className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-accent ${
+                        idx === mentionIndex ? 'bg-accent' : ''
                       }`}
                     >
-                      <span className="inline-flex h-4 w-4 items-center justify-center text-gray-500">
+                      <span className="inline-flex h-4 w-4 items-center justify-center text-muted-foreground">
                         <FileTypeIcon path={item.path} type={item.type} size={14} />
                       </span>
-                      <span className="truncate text-gray-800 dark:text-gray-200">{item.path}</span>
+                      <span className="truncate text-popover-foreground">{item.path}</span>
                     </button>
                   ))}
                 </div>
-                <div className="border-t border-gray-200 px-3 py-1 text-[10px] text-gray-500 dark:border-gray-700">
+                <div className="border-t border-border px-3 py-1 text-xs text-muted-foreground">
                   Type to filter files and folders • ↑/↓ to navigate • Enter to insert
                 </div>
               </div>
             )}
           </div>
 
-          <div className="relative flex items-center justify-between rounded-b-xl px-4 py-3">
+          <div className="relative flex items-center justify-between rounded-b-lg px-4 py-3">
             <div className="flex items-center gap-2">
               <ProviderSelector
                 value={provider as Provider}
@@ -349,7 +352,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
             <div className="flex items-center gap-2">
               {isLoading && (
-                <span className="w-16 text-right text-xs font-medium tabular-nums text-gray-500 dark:text-gray-400">
+                <span className="w-16 text-right text-xs font-medium tabular-nums text-muted-foreground">
                   {formatLoadingTime(loadingSeconds)}
                 </span>
               )}
@@ -357,36 +360,28 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 type="button"
                 onClick={isLoading ? onCancel : onSend}
                 disabled={sendDisabled}
-                className={`group relative h-9 w-9 rounded-md p-0 text-gray-600 transition-colors disabled:pointer-events-none disabled:opacity-50 dark:text-gray-300 ${
-                  isLoading
-                    ? 'bg-gray-200 hover:bg-red-300 hover:text-white dark:bg-gray-700 dark:hover:text-white'
-                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600'
-                }`}
                 aria-label={
-                  provider === 'droid' ||
-                  provider === 'gemini' ||
-                  provider === 'cursor' ||
-                  provider === 'copilot' ||
-                  provider === 'amp' ||
-                  provider === 'opencode'
+                  isTerminalProvider
                     ? 'Terminal-only provider'
                     : isLoading
-                      ? 'Stop Codex'
+                      ? 'Stop agent'
                       : 'Send'
                 }
+                className={`group h-9 w-9 rounded-lg p-0 transition-all duration-150 disabled:pointer-events-none disabled:opacity-40 ${
+                  isTerminalProvider
+                    ? 'bg-muted text-muted-foreground'
+                    : isLoading
+                      ? 'bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground'
+                      : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                }`}
               >
-                {provider === 'droid' ||
-                provider === 'gemini' ||
-                provider === 'cursor' ||
-                provider === 'copilot' ||
-                provider === 'amp' ||
-                provider === 'opencode' ? (
+                {isTerminalProvider ? (
                   <div className="flex h-full w-full items-center justify-center">
-                    <div className="h-3.5 w-3.5 rounded-[3px] bg-gray-500 dark:bg-gray-300" />
+                    <div className="h-3 w-3 rounded-sm bg-current opacity-50" />
                   </div>
                 ) : isLoading ? (
                   <div className="flex h-full w-full items-center justify-center">
-                    <div className="h-3.5 w-3.5 rounded-[3px] bg-gray-500 transition-colors duration-150 group-hover:bg-red-500 dark:bg-gray-300" />
+                    <div className="h-3 w-3 rounded-sm bg-current" />
                   </div>
                 ) : (
                   <ArrowRight className="h-4 w-4" />

@@ -46,78 +46,18 @@ interface ProviderSelectorProps {
 }
 
 const providerConfig = {
-	codex: {
-		name: "Codex",
-		logo: openaiLogo,
-		alt: "Codex",
-		invertInDark: true,
-	},
-	qwen: {
-		name: "Qwen Code",
-		logo: qwenLogo,
-		alt: "Qwen Code CLI",
-		invertInDark: false,
-	},
-	claude: {
-		name: "Claude Code",
-		logo: claudeLogo,
-		alt: "Claude Code",
-		invertInDark: false,
-	},
-	droid: {
-		name: "Droid",
-		logo: factoryLogo,
-		alt: "Factory Droid",
-		invertInDark: true,
-	},
-	gemini: {
-		name: "Gemini",
-		logo: geminiLogo,
-		alt: "Gemini CLI",
-		invertInDark: false,
-	},
-	cursor: {
-		name: "Cursor",
-		logo: cursorLogo,
-		alt: "Cursor CLI",
-		invertInDark: true,
-	},
-	copilot: {
-		name: "Copilot",
-		logo: copilotLogo,
-		alt: "GitHub Copilot CLI",
-		invertInDark: true,
-	},
-	amp: {
-		name: "Amp",
-		logo: ampLogo,
-		alt: "Amp CLI",
-		invertInDark: false,
-	},
-	opencode: {
-		name: "OpenCode",
-		logo: opencodeLogo,
-		alt: "OpenCode CLI",
-		invertInDark: true,
-	},
-	charm: {
-		name: "Charm",
-		logo: charmLogo,
-		alt: "Charm CLI",
-		invertInDark: false,
-	},
-	auggie: {
-		name: "Auggie",
-		logo: augmentLogo,
-		alt: "Auggie CLI",
-		invertInDark: false,
-	},
-	kimi: {
-		name: "Kimi",
-		logo: kimiLogo,
-		alt: "Kimi CLI",
-		invertInDark: false,
-	},
+	codex:    { name: "Codex",      logo: openaiLogo,   alt: "Codex",              invertInDark: true,  accent: "bg-emerald-500" },
+	claude:   { name: "Claude Code",logo: claudeLogo,   alt: "Claude Code",        invertInDark: false, accent: "bg-orange-400"  },
+	qwen:     { name: "Qwen Code",  logo: qwenLogo,     alt: "Qwen Code CLI",      invertInDark: false, accent: "bg-violet-500"  },
+	gemini:   { name: "Gemini",     logo: geminiLogo,   alt: "Gemini CLI",         invertInDark: false, accent: "bg-sky-400"     },
+	copilot:  { name: "Copilot",    logo: copilotLogo,  alt: "GitHub Copilot CLI", invertInDark: true,  accent: "bg-slate-400"   },
+	kimi:     { name: "Kimi",       logo: kimiLogo,     alt: "Kimi CLI",           invertInDark: false, accent: "bg-blue-500"    },
+	auggie:   { name: "Auggie",     logo: augmentLogo,  alt: "Auggie CLI",         invertInDark: false, accent: "bg-cyan-500"    },
+	amp:      { name: "Amp",        logo: ampLogo,      alt: "Amp CLI",            invertInDark: false, accent: "bg-amber-400"   },
+	opencode: { name: "OpenCode",   logo: opencodeLogo, alt: "OpenCode CLI",       invertInDark: true,  accent: "bg-emerald-400" },
+	charm:    { name: "Charm",      logo: charmLogo,    alt: "Charm CLI",          invertInDark: false, accent: "bg-pink-400"    },
+	droid:    { name: "Droid",      logo: factoryLogo,  alt: "Factory Droid",      invertInDark: true,  accent: "bg-zinc-400"    },
+	cursor:   { name: "Cursor",     logo: cursorLogo,   alt: "Cursor CLI",         invertInDark: true,  accent: "bg-zinc-400"    },
 } as const;
 
 export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
@@ -153,6 +93,34 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
 	);
 	const currentProvider = providerConfig[value as keyof typeof providerConfig];
 
+	const triggerContent = (
+		<div className="flex w-full min-w-0 items-center gap-2 overflow-hidden">
+			{isCustomClaude && currentCustomConfig ? (
+				<>
+					<img
+						src={claudeLogo}
+						alt="Custom Claude"
+						className="h-4 w-4 shrink-0 rounded-sm"
+					/>
+					<span className="h-2 w-2 shrink-0 rounded-full bg-orange-400" aria-hidden="true" />
+					<span className="truncate text-sm">{currentCustomConfig.name}</span>
+				</>
+			) : currentProvider ? (
+				<>
+					<img
+						src={currentProvider.logo}
+						alt={currentProvider.alt}
+						className={`h-4 w-4 shrink-0 rounded-sm ${currentProvider.invertInDark ? "dark:invert" : ""}`}
+					/>
+					<span className={`h-2 w-2 shrink-0 rounded-full ${currentProvider.accent}`} aria-hidden="true" />
+					<SelectValue placeholder="Select provider" />
+				</>
+			) : (
+				<SelectValue placeholder="Select provider" />
+			)}
+		</div>
+	);
+
 	return (
 		<div className={`relative block w-[12rem] min-w-0 ${className}`}>
 			<Select
@@ -170,35 +138,9 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
 							<TooltipTrigger asChild>
 								<SelectTrigger
 									aria-disabled
-									className={`h-9 w-full border-none bg-gray-100 dark:bg-gray-700 ${
-										disabled ? "cursor-not-allowed opacity-60" : ""
-									}`}
+									className="h-9 w-full cursor-not-allowed border-none bg-muted opacity-60"
 								>
-									<div className="flex w-full min-w-0 items-center gap-2 overflow-hidden">
-										{isCustomClaude && currentCustomConfig ? (
-											<>
-												<img
-													src={claudeLogo}
-													alt="Custom Claude"
-													className="h-4 w-4 shrink-0 rounded-sm"
-												/>
-												<span className="truncate text-sm">
-													{currentCustomConfig.name}
-												</span>
-											</>
-										) : currentProvider ? (
-											<>
-												<img
-													src={currentProvider.logo}
-													alt={currentProvider.alt}
-													className={`h-4 w-4 shrink-0 rounded-sm ${currentProvider.invertInDark ? "dark:invert" : ""}`}
-												/>
-												<SelectValue placeholder="Select provider" />
-											</>
-										) : (
-											<SelectValue placeholder="Select provider" />
-										)}
-									</div>
+									{triggerContent}
 								</SelectTrigger>
 							</TooltipTrigger>
 							<TooltipContent>
@@ -207,32 +149,8 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
 						</Tooltip>
 					</TooltipProvider>
 				) : (
-					<SelectTrigger className="h-9 w-full border-none bg-gray-100 dark:bg-gray-700">
-						<div className="flex w-full min-w-0 items-center gap-2 overflow-hidden">
-							{isCustomClaude && currentCustomConfig ? (
-								<>
-									<img
-										src={claudeLogo}
-										alt="Custom Claude"
-										className="h-4 w-4 shrink-0 rounded-sm"
-									/>
-									<span className="truncate text-sm">
-										{currentCustomConfig.name}
-									</span>
-								</>
-							) : currentProvider ? (
-								<>
-									<img
-										src={currentProvider.logo}
-										alt={currentProvider.alt}
-										className={`h-4 w-4 shrink-0 rounded-sm ${currentProvider.invertInDark ? "dark:invert" : ""}`}
-									/>
-									<SelectValue placeholder="Select provider" />
-								</>
-							) : (
-								<SelectValue placeholder="Select provider" />
-							)}
-						</div>
+					<SelectTrigger className="h-9 w-full border-none bg-muted">
+						{triggerContent}
 					</SelectTrigger>
 				)}
 				<SelectContent side="top">
@@ -244,6 +162,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
 									alt={config.alt}
 									className={`h-4 w-4 rounded-sm ${config.invertInDark ? "dark:invert" : ""}`}
 								/>
+								<span className={`h-2 w-2 shrink-0 rounded-full ${config.accent}`} aria-hidden="true" />
 								<SelectItemText>{config.name}</SelectItemText>
 							</div>
 						</SelectItem>
@@ -261,6 +180,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
 											alt={config.name}
 											className="h-4 w-4 rounded-sm"
 										/>
+										<span className="h-2 w-2 shrink-0 rounded-full bg-orange-400" aria-hidden="true" />
 										<SelectItemText>{config.name}</SelectItemText>
 									</div>
 								</SelectItem>

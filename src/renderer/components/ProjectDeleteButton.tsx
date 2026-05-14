@@ -35,7 +35,7 @@ export const ProjectDeleteButton: React.FC<Props> = ({
           type="button"
           className={
             className ||
-            'inline-flex items-center justify-center rounded p-2 text-muted-foreground hover:bg-transparent hover:text-destructive focus-visible:ring-0'
+            'inline-flex items-center justify-center rounded p-2 text-muted-foreground hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring'
           }
           title="Delete project"
           aria-label={ariaLabel}
