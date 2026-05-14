@@ -1,7 +1,7 @@
-# Emdash Comprehensive Upgrade Plan
+# NVCode Comprehensive Upgrade Plan
 
 ## Overview
-This document outlines the comprehensive upgrade plan for the emdash multi-agent coding interface, originally requested to add 6 main categories of features with additional UI improvements.
+This document outlines the comprehensive upgrade plan for the NVCode multi-agent coding interface, originally requested to add 6 main categories of features with additional UI improvements.
 
 ## Requested Features
 

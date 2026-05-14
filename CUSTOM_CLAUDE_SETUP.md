@@ -1,6 +1,6 @@
 # Custom Claude Configurations - Setup Guide
 
-This guide explains how to set up and use custom Claude configurations in emdash, allowing you to run the Claude Code CLI with different API endpoints, models, or authentication tokens.
+This guide explains how to set up and use custom Claude configurations in NVCode, allowing you to run the Claude Code CLI with different API endpoints, models, or authentication tokens.
 
 ## Overview
 
@@ -29,7 +29,7 @@ Each custom Claude configuration can set the following environment variables:
 
 ### 1. Access Settings
 
-1. Click the **Settings** icon in the top-right corner of emdash
+1. Click the **Settings** icon in the top-right corner of NVCode
 2. Navigate to the **Connections** tab
 3. Scroll to the **Custom Claude Configurations** section
 
@@ -180,9 +180,9 @@ Disable Non-Essential Traffic: ✓
 
 ### How It Works
 
-1. **Storage**: Configurations are stored in emdash's SQLite database (`custom_claude_configs` table)
+1. **Storage**: Configurations are stored in NVCode's local database (`custom_claude_configs` table)
 2. **Terminal Mode**: Custom Claude configs work as terminal-only providers (like regular Claude, Codex, Droid, etc.)
-3. **Environment Injection**: When the terminal opens, emdash loads your config from the database and injects the environment variables into the PTY (pseudo-terminal) session
+3. **Environment Injection**: When the terminal opens, NVCode loads your config from the database and injects the environment variables into the PTY (pseudo-terminal) session
 4. **Process Isolation**: Each workspace runs its own Claude CLI process with its own environment in an interactive terminal
 
 ### Database Schema
@@ -224,9 +224,9 @@ CREATE TABLE custom_claude_configs (
 ### Token Storage
 - Auth tokens are stored in the local SQLite database
 - The database is stored in your user data directory:
-  - **macOS**: `~/Library/Application Support/emdash/emdash.db`
-  - **Windows**: `%APPDATA%/emdash/emdash.db`
-  - **Linux**: `~/.config/emdash/emdash.db`
+  - **macOS**: `~/Library/Application Support/nvcode/nvcode.db`
+  - **Windows**: `%APPDATA%/nvcode/nvcode.db`
+  - **Linux**: `~/.config/nvcode/nvcode.db`
 
 ### Best Practices
 1. **Never share your database file** - it contains authentication tokens
@@ -301,7 +301,7 @@ A: Yes! As long as the API is compatible with the Anthropic/Claude API format, y
 ## Support
 
 For issues or questions:
-- GitHub Issues: https://github.com/generalaction/emdash/issues
+- GitHub Issues: https://github.com/nonvariable/nvcode/issues
 - Discord: https://discord.gg/meqK3A5b
 
 ## Future Enhancements

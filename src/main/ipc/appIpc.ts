@@ -114,7 +114,7 @@ export function registerAppIpc() {
       for (const packageJsonPath of possiblePaths) {
         try {
           const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-          if (packageJson.name === 'emdash' && packageJson.version) {
+          if (packageJson.name === 'nvcode' && packageJson.version) {
             return packageJson.version;
           }
         } catch {

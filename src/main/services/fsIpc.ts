@@ -163,7 +163,7 @@ export function registerFsIpc(): void {
 
         const baseDir = path.join(
           workspacePath,
-          '.emdash',
+          '.nvcode',
           args.subdir || DEFAULT_ATTACHMENTS_SUBDIR
         );
         fs.mkdirSync(baseDir, { recursive: true });

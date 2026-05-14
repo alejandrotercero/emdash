@@ -34,12 +34,12 @@ const MainContent: React.FC<MainContentProps> = ({
             <h1
               className="mb-4 text-6xl font-bold text-white"
               style={{
-                fontFamily: '"Ioskeley Mono", monospace',
+                fontFamily: '"IosevkaTerm Nerd Font Mono", "IosevkaTerm NFM", ui-monospace, monospace',
                 letterSpacing: '0.1em',
                 textShadow: '2px 2px 0px #000',
               }}
             >
-              emdash
+              nvcode
             </h1>
             <h2 className="text-2xl text-gray-400">Codex</h2>
           </div>

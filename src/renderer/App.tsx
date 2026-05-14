@@ -14,8 +14,8 @@ import { useGithubAuth } from './hooks/useGithubAuth';
 import { useTheme } from './hooks/useTheme';
 import { useFont } from './hooks/useFont';
 import { ThemeProvider } from './components/ThemeProvider';
-import emdashLogo from '../assets/images/emdash/emdash_logo.svg';
-import emdashLogoWhite from '../assets/images/emdash/emdash_logo_white.svg';
+import nvcodeLogo from '../assets/images/nvcode/nvcode_logo.svg';
+import nvcodeLogoWhite from '../assets/images/nvcode/nvcode_logo_white.svg';
 import Titlebar from './components/titlebar/Titlebar';
 import { SidebarProvider, useSidebar } from './components/ui/sidebar';
 import { RightSidebarProvider, useRightSidebar } from './components/ui/right-sidebar';
@@ -200,7 +200,7 @@ interface Workspace {
 }
 
 const TITLEBAR_HEIGHT = '36px';
-const PANEL_LAYOUT_STORAGE_KEY = 'emdash.layout.left-main-right.v2';
+const PANEL_LAYOUT_STORAGE_KEY = 'nvcode.layout.left-main-right.v2';
 const DEFAULT_PANEL_LAYOUT: [number, number, number] = [20, 60, 20];
 const LEFT_SIDEBAR_MIN_SIZE = 16;
 const LEFT_SIDEBAR_MAX_SIZE = 30;
@@ -566,10 +566,10 @@ const AppContent: React.FC = () => {
               } else {
                 const updateHint =
                   platform === 'darwin'
-                    ? 'Tip: Update GitHub CLI with: brew upgrade gh — then restart emdash.'
+                    ? 'Tip: Update GitHub CLI with: brew upgrade gh — then restart NVCode.'
                     : platform === 'win32'
-                      ? 'Tip: Update GitHub CLI with: winget upgrade GitHub.cli — then restart emdash.'
-                      : 'Tip: Update GitHub CLI via your package manager (e.g., apt/dnf) and restart emdash.';
+                      ? 'Tip: Update GitHub CLI with: winget upgrade GitHub.cli — then restart NVCode.'
+                      : 'Tip: Update GitHub CLI via your package manager (e.g., apt/dnf) and restart NVCode.';
                 toast({
                   title: 'GitHub Connection Failed',
                   description: `Git repository detected but couldn't connect to GitHub: ${githubInfo.error}\n\n${updateHint}`,
@@ -1137,16 +1137,16 @@ const AppContent: React.FC = () => {
                 <div className="logo-shimmer-container">
                   <img
                     key={effectiveTheme}
-                    src={effectiveTheme === 'dark' ? emdashLogoWhite : emdashLogo}
-                    alt="emdash"
+                    src={effectiveTheme === 'dark' ? nvcodeLogoWhite : nvcodeLogo}
+                    alt="NVCode"
                     className="logo-shimmer-image"
                   />
                   <span
                     className="logo-shimmer-overlay"
                     aria-hidden="true"
                     style={{
-                      WebkitMaskImage: `url(${effectiveTheme === 'dark' ? emdashLogoWhite : emdashLogo})`,
-                      maskImage: `url(${effectiveTheme === 'dark' ? emdashLogoWhite : emdashLogo})`,
+                      WebkitMaskImage: `url(${effectiveTheme === 'dark' ? nvcodeLogoWhite : nvcodeLogo})`,
+                      maskImage: `url(${effectiveTheme === 'dark' ? nvcodeLogoWhite : nvcodeLogo})`,
                       WebkitMaskRepeat: 'no-repeat',
                       maskRepeat: 'no-repeat',
                       WebkitMaskSize: 'contain',

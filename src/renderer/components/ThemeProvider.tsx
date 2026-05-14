@@ -2,7 +2,7 @@ import { createContext, useEffect, useState, type ReactNode } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 
-const STORAGE_KEY = 'emdash-theme';
+const STORAGE_KEY = 'nvcode-theme';
 
 function getSystemTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined') return 'light';

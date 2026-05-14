@@ -17,7 +17,7 @@ const ThemeCard: React.FC = () => {
         <div>
           <div className="text-sm font-medium text-foreground">Appearance</div>
           <div className="text-xs text-muted-foreground">
-            Choose how Emdash looks. System uses your operating system preference.
+            Choose how NVCode looks. System uses your operating system preference.
           </div>
         </div>
         <div className="flex gap-2">

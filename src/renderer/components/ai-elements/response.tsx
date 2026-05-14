@@ -77,14 +77,18 @@ export const Response: React.FC<ResponseProps> = ({
     ),
     li: ({ children }: any) => <li className="ml-2">{children}</li>,
     p: ({ children }: any) => <p className="mb-2 last:mb-0">{children}</p>,
-    strong: ({ children }: any) => <strong className="font-semibold">{children}</strong>,
+    strong: ({ children }: any) => <span className="font-normal">{children}</span>,
     em: ({ children }: any) => <em className="italic">{children}</em>,
     ...(components || {}),
   } as any;
 
   return (
     <div
-      className={cn('prose prose-sm max-w-none [&>p]:my-0 [&>p]:leading-normal', className)}
+      className={cn(
+        'prose prose-sm max-w-none [&>p]:my-0 [&>p]:leading-normal',
+        '[&_strong]:font-normal [&_b]:font-normal [&_h1]:font-normal [&_h2]:font-normal [&_h3]:font-normal [&_h4]:font-normal [&_h5]:font-normal [&_h6]:font-normal [&_th]:font-normal',
+        className
+      )}
       {...divProps}
     >
       {typeof children === 'string' ? (

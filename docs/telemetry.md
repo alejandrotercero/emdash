@@ -1,7 +1,7 @@
 Telemetry
 
 Overview
-- Emdash collects anonymous usage telemetry to improve the app.
+- NVCode collects anonymous usage telemetry to improve the app.
 - Telemetry defaults to enabled and can be disabled via `TELEMETRY_ENABLED=false`.
 - Data is sent to PostHog using explicit, allowlisted events only.
 

@@ -1,33 +1,12 @@
 @import "@fontsource/outfit";
 @import "@xterm/xterm/css/xterm.css";
 
-/* Custom fonts */
+/* Bundled Iosevka Term Nerd Font Mono */
 @font-face {
-	font-family: "Ioskeley Mono";
-	src: url("assets/fonts/IoskeleyMonoNerdFont-Condensed.ttf") format("truetype");
+	font-family: "IosevkaTerm Nerd Font Mono";
+	src: url("assets/fonts/IosevkaTermNFM.ttf") format("truetype");
 	font-weight: 400;
 	font-style: normal;
-	font-display: swap;
-}
-@font-face {
-	font-family: "Ioskeley Mono";
-	src: url("assets/fonts/IoskeleyMonoNerdFont-CondensedBold.ttf") format("truetype");
-	font-weight: 700;
-	font-style: normal;
-	font-display: swap;
-}
-@font-face {
-	font-family: "Ioskeley Mono";
-	src: url("assets/fonts/IoskeleyMonoNerdFont-CondensedItalic.ttf") format("truetype");
-	font-weight: 400;
-	font-style: italic;
-	font-display: swap;
-}
-@font-face {
-	font-family: "Ioskeley Mono";
-	src: url("assets/fonts/IoskeleyMonoNerdFont-CondensedBoldItalic.ttf") format("truetype");
-	font-weight: 700;
-	font-style: italic;
 	font-display: swap;
 }
 
@@ -39,6 +18,15 @@
 .xterm .xterm-viewport::-webkit-scrollbar {
 	width: 0 !important; /* Chrome/Safari */
 	height: 0 !important;
+}
+
+/* Force xterm text to use the Nerd Font, overriding the global `*` rule
+   that sets font-family: Outfit on every element. Do NOT set font-size,
+   line-height, or letter-spacing here — those are set via Terminal options
+   so xterm's internal cell-width measurement matches the rendered text. */
+.xterm,
+.xterm * {
+	font-family: "IosevkaTerm Nerd Font Mono", "IosevkaTerm NFM", ui-monospace, Menlo, Monaco, "Courier New", monospace !important;
 }
 
 @tailwind base;
@@ -122,7 +110,7 @@
 	.font-ubuntu { font-family: "Ubuntu", "system-ui", sans-serif !important; }
 	.font-cantarell { font-family: "Cantarell", "system-ui", sans-serif !important; }
 	.font-apple { font-family: "-apple-system", "BlinkMacSystemFont", sans-serif !important; }
-	.font-mono-custom { font-family: "Ioskeley Mono", monospace !important; }
+	.font-mono-custom { font-family: "IosevkaTerm Nerd Font Mono", "IosevkaTerm NFM", ui-monospace, monospace !important; }
 
 	/* Dynamic font via CSS custom property */
 	:root {
@@ -278,9 +266,3 @@
 	}
 }
 
-.xterm-screen * {
-	font-family: "Ioskeley Mono", monospace;
-	font-size: 0.85rem;
-	line-height: .75rem;
-	letter-spacing: -0.05em;
-}

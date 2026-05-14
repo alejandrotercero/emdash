@@ -7,7 +7,7 @@ interface FontSettings {
   setFont: (font: FontOption) => void;
 }
 
-const FONT_STORAGE_KEY = 'emdash-ui-font';
+const FONT_STORAGE_KEY = 'nvcode-ui-font';
 
 const DEFAULT_FONT: FontOption = 'system-ui';
 

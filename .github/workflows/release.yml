@@ -179,7 +179,7 @@ jobs:
             gh release create "$TAG" --title "$TAG" --generate-notes --latest
           fi
           # Upload Linux packages and metadata
-          FILES=(release/emdash-*.AppImage release/emdash-*.deb)
+          FILES=(release/nvcode-*.AppImage release/nvcode-*.deb)
           if [ -f release/latest-linux.yml ]; then FILES+=(release/latest-linux.yml); fi
           gh release upload "$TAG" "${FILES[@]}" --clobber
 
@@ -315,7 +315,7 @@ jobs:
         run: |
           set -euo pipefail
           FAILED=0
-          for APP in release/mac*/emdash.app; do
+          for APP in release/mac*/NVCode.app; do
             if [ -d "$APP" ]; then
               echo "Checking codesign for $APP"
               META=$(codesign -dv --verbose=4 "$APP" 2>&1)
@@ -333,7 +333,7 @@ jobs:
       - name: Verify bundle metadata and integrity (no app notarization required)
         run: |
           set -euo pipefail
-          for APP in release/mac*/emdash.app; do
+          for APP in release/mac*/NVCode.app; do
             if [ -d "$APP" ]; then
               echo "Asserting bundle ID and resources for $APP"
               PLIST="$APP/Contents/Info.plist"
@@ -345,8 +345,8 @@ jobs:
               if [ -z "$BID" ]; then
                 BID=$(plutil -extract CFBundleIdentifier xml1 -o - "$PLIST" 2>/dev/null | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p' | head -n1)
               fi
-              if [ "$BID" != "com.emdash" ]; then
-                echo "::error::CFBundleIdentifier mismatch (got '$BID', expected 'com.emdash')"; exit 1
+              if [ "$BID" != "com.nonvariable.code" ]; then
+                echo "::error::CFBundleIdentifier mismatch (got '$BID', expected 'com.nonvariable.code')"; exit 1
               fi
               # Ensure packaged resources exist (prevents white-screen adhoc shells)
               if [ ! -f "$APP/Contents/Resources/app.asar" ] && [ ! -d "$APP/Contents/Resources/app" ]; then
@@ -362,7 +362,7 @@ jobs:
         run: |
           set -euo pipefail
           # Staple apps
-          for APP in release/mac*/emdash.app; do
+          for APP in release/mac*/NVCode.app; do
             if [ -d "$APP" ]; then
               echo "Attempt staple $APP (may be not notarized)"; xcrun stapler staple "$APP" || echo "App staple skipped"
               echo "Validate $APP (best-effort)"; xcrun stapler validate "$APP" || echo "App validate skipped"
@@ -408,9 +408,9 @@ jobs:
             [ -f "$DMG" ] || continue
             MNT=$(mktemp -d)
             echo "Mounting $DMG at $MNT"; hdiutil attach "$DMG" -mountpoint "$MNT" -nobrowse -quiet
-            APP="$MNT/emdash.app"
+            APP="$MNT/NVCode.app"
             if [ ! -d "$APP" ]; then
-              echo "::error::No emdash.app found inside $DMG"; hdiutil detach "$MNT" -quiet || true; rm -rf "$MNT"; exit 1
+              echo "::error::No NVCode.app found inside $DMG"; hdiutil detach "$MNT" -quiet || true; rm -rf "$MNT"; exit 1
             fi
             echo "codesign info for app inside DMG:"; codesign -dv --verbose=4 "$APP" 2>&1 | sed -n '1,60p'
             echo "Gatekeeper assessment (should be accepted):"; spctl -a -vv --type execute "$APP"
@@ -431,7 +431,7 @@ jobs:
             gh release create "$TAG" --title "$TAG" --generate-notes --latest
           fi
           # Upload stapled DMGs and update files used for autoupdate if present
-          FILES=(release/emdash-*.dmg)
+          FILES=(release/nvcode-*.dmg)
           if ls release/*.blockmap >/dev/null 2>&1; then FILES+=(release/*.blockmap); fi
           if [ -f release/latest-mac.yml ]; then FILES+=(release/latest-mac.yml); fi
           gh release upload "$TAG" "${FILES[@]}" --clobber
@@ -443,8 +443,8 @@ jobs:
           echo "Contents of release/:"
           ls -lah release || true
           echo "Find DMGs:"
-          find release -maxdepth 1 -type f -name 'emdash-*.dmg' -print
-          DMG_COUNT=$(find release -maxdepth 1 -type f -name 'emdash-*.dmg' | wc -l | tr -d ' ')
+          find release -maxdepth 1 -type f -name 'nvcode-*.dmg' -print
+          DMG_COUNT=$(find release -maxdepth 1 -type f -name 'nvcode-*.dmg' | wc -l | tr -d ' ')
           if [ "$DMG_COUNT" -eq 0 ]; then
             echo "::error::No DMG files found in release/."; exit 1
           fi
@@ -454,7 +454,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SIGNED-STAPLED-DMGS
-          path: release/emdash-*.dmg
+          path: release/nvcode-*.dmg
           if-no-files-found: error
 
       - name: Upload supplemental files (blockmaps/yml) (dry-run)

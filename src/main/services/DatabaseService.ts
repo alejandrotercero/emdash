@@ -1,5 +1,5 @@
 import { app } from "electron";
-import { existsSync, renameSync, mkdirSync } from "fs";
+import { existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import type { PGlite } from "@electric-sql/pglite";
 import { log } from "../lib/logger";
@@ -87,7 +87,7 @@ export class DatabaseService {
 	private disabled: boolean = false;
 
 	constructor() {
-		if (process.env.EMDASH_DISABLE_NATIVE_DB === "1") {
+		if (process.env.NVCODE_DISABLE_NATIVE_DB === "1") {
 			this.disabled = true;
 		}
 		const userDataPath = app.getPath("userData");
@@ -114,9 +114,6 @@ export class DatabaseService {
 
 			// Create tables and run migrations
 			await this.createTables();
-
-			// Migrate data from old SQLite database if it exists
-			await this.migrateFromSqlite();
 		} catch (e) {
 			log.error("Failed to initialize PGlite database:", e);
 			throw e;
@@ -329,156 +326,6 @@ export class DatabaseService {
 		await this.db.exec(
 			`CREATE INDEX IF NOT EXISTS idx_setup_commands_parent ON setup_commands (parent_id, type)`,
 		);
-	}
-
-	/**
-	 * One-time migration from the old SQLite database (emdash.db) to PGlite.
-	 * Runs after createTables() on first launch with an existing sqlite3 DB present.
-	 */
-	private async migrateFromSqlite(): Promise<void> {
-		if (this.disabled) return;
-
-		const userDataPath = app.getPath("userData");
-		const oldDbPath = join(userDataPath, "emdash.db");
-		const migratedMarker = join(userDataPath, "emdash.db.migrated");
-
-		// Skip if no old DB or already migrated
-		if (!existsSync(oldDbPath) || existsSync(migratedMarker)) return;
-
-		log.info("Migrating data from SQLite database to PGlite...");
-
-		let sqlite3Module: any;
-		try {
-			// @ts-expect-error - sqlite3 may be absent; gracefully handled by try/catch
-			sqlite3Module = await import("sqlite3");
-		} catch {
-			log.warn("sqlite3 module not available, skipping data migration");
-			// Mark as done so we don't retry
-			renameSync(oldDbPath, migratedMarker);
-			return;
-		}
-
-		const { promisify } = await import("util");
-
-		try {
-			// Open old SQLite DB
-			const oldDb: any = await new Promise((resolve, reject) => {
-				const db = new sqlite3Module.Database(oldDbPath, (err: Error | null) => {
-					if (err) reject(err);
-					else resolve(db);
-				});
-			});
-
-			const allAsync = promisify(oldDb.all.bind(oldDb));
-
-			// Migrate all data inside a single PGlite transaction
-			await this.db!.transaction(async (tx) => {
-				// Migrate projects
-				const projects = await allAsync("SELECT * FROM projects ORDER BY created_at ASC");
-				for (const p of projects) {
-					await tx.query(
-						`INSERT INTO projects (id, name, path, git_remote, git_branch, github_repository, github_connected, created_at, updated_at)
-						 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-						 ON CONFLICT (path) DO NOTHING`,
-						[p.id, p.name, p.path, p.git_remote, p.git_branch,
-						 p.github_repository, !!p.github_connected,
-						 p.created_at || new Date().toISOString(),
-						 p.updated_at || new Date().toISOString()]
-					);
-				}
-
-				// Migrate workspaces
-				const workspaces = await allAsync("SELECT * FROM workspaces ORDER BY created_at ASC");
-				for (const w of workspaces) {
-					await tx.query(
-						`INSERT INTO workspaces
-						 (id, project_id, name, branch, base_branch, path, status, agent_id,
-						  metadata, worktree_type, git_pull_enabled, last_git_check,
-						  setup_commands, created_at, updated_at)
-						 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-						 ON CONFLICT (id) DO NOTHING`,
-						[w.id, w.project_id, w.name, w.branch, w.base_branch || null,
-						 w.path, w.status, w.agent_id || null, w.metadata || null,
-						 w.worktree_type || "worktree", !!w.git_pull_enabled,
-						 w.last_git_check || null, w.setup_commands || null,
-						 w.created_at || new Date().toISOString(),
-						 w.updated_at || new Date().toISOString()]
-					);
-				}
-
-				// Migrate conversations
-				const conversations = await allAsync("SELECT * FROM conversations ORDER BY created_at ASC");
-				for (const c of conversations) {
-					await tx.query(
-						`INSERT INTO conversations (id, workspace_id, title, created_at, updated_at)
-						 VALUES ($1, $2, $3, $4, $5)
-						 ON CONFLICT (id) DO NOTHING`,
-						[c.id, c.workspace_id, c.title,
-						 c.created_at || new Date().toISOString(),
-						 c.updated_at || new Date().toISOString()]
-					);
-				}
-
-				// Migrate messages
-				const messages = await allAsync("SELECT * FROM messages ORDER BY timestamp ASC");
-				for (const m of messages) {
-					await tx.query(
-						`INSERT INTO messages (id, conversation_id, content, sender, timestamp, metadata)
-						 VALUES ($1, $2, $3, $4, $5, $6)
-						 ON CONFLICT (id) DO NOTHING`,
-						[m.id, m.conversation_id, m.content, m.sender,
-						 m.timestamp || new Date().toISOString(), m.metadata || null]
-					);
-				}
-
-				// Migrate custom_claude_configs
-				const configs = await allAsync("SELECT * FROM custom_claude_configs ORDER BY created_at ASC");
-				for (const cfg of configs) {
-					await tx.query(
-						`INSERT INTO custom_claude_configs
-						 (id, name, base_url, model, small_fast_model, auth_token,
-						  disable_nonessential_traffic, created_at, updated_at)
-						 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-						 ON CONFLICT (name) DO NOTHING`,
-						[cfg.id, cfg.name, cfg.base_url || null, cfg.model || null,
-						 cfg.small_fast_model || null, cfg.auth_token || null,
-						 !!cfg.disable_nonessential_traffic,
-						 cfg.created_at || new Date().toISOString(),
-						 cfg.updated_at || new Date().toISOString()]
-					);
-				}
-
-				// Migrate setup_commands
-				const commands = await allAsync("SELECT * FROM setup_commands ORDER BY created_at ASC");
-				for (const cmd of commands) {
-					await tx.query(
-						`INSERT INTO setup_commands
-						 (id, type, parent_id, commands, enabled, name, description,
-						  created_at, updated_at)
-						 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-						 ON CONFLICT (id) DO NOTHING`,
-						[cmd.id, cmd.type, cmd.parent_id, cmd.commands,
-						 !!cmd.enabled, cmd.name || null, cmd.description || null,
-						 cmd.created_at || new Date().toISOString(),
-						 cmd.updated_at || new Date().toISOString()]
-					);
-				}
-			});
-
-			// Close old DB and mark as migrated
-			await new Promise<void>((resolve, reject) => {
-				oldDb.close((err: Error | null) => {
-					if (err) reject(err);
-					else resolve();
-				});
-			});
-			renameSync(oldDbPath, migratedMarker);
-			log.info("SQLite database migration to PGlite completed successfully");
-		} catch (error) {
-			log.error("Failed to migrate SQLite data to PGlite:", error);
-			// Do NOT delete the old database on failure; user data is safe
-			throw error;
-		}
 	}
 
 	async saveProject(

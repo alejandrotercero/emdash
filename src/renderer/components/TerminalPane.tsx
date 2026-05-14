@@ -1,5 +1,7 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import { ArrowDown } from 'lucide-react';
 import { log } from '../lib/logger';
 
 type Props = {
@@ -38,6 +40,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const termRef = useRef<Terminal | null>(null);
   const disposeFns = useRef<Array<() => void>>([]);
+  const [isScrolledUp, setIsScrolledUp] = useState(false);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -112,11 +115,51 @@ const TerminalPaneComponent: React.FC<Props> = ({
       theme,
       allowTransparency: false,
       scrollback: 1000,
+      fontFamily:
+        '"IosevkaTerm Nerd Font Mono", "IosevkaTerm NFM", ui-monospace, Menlo, Monaco, "Courier New", monospace',
+      fontSize: 13,
+      lineHeight: 1.2,
+      fontWeightBold: 'normal',
+      drawBoldTextInBrightColors: false,
     });
     termRef.current = term;
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+    // Preload the Nerd Font so xterm's initial cell-width measurement uses
+    // the correct font (and not a fallback that's a different width).
+    try {
+      (document as any).fonts?.load?.('13px "IosevkaTerm Nerd Font Mono"');
+    } catch {}
     term.open(el);
+    try {
+      fitAddon.fit();
+    } catch {}
+    // Refit once custom fonts finish loading — initial cell-width measurement
+    // may have used the fallback font. Re-assigning fontFamily forces xterm to
+    // recompute cell width with the now-loaded Nerd Font.
+    try {
+      const fontFamily = term.options.fontFamily;
+      (document as any).fonts?.ready?.then(() => {
+        try {
+          if (!termRef.current) return;
+          termRef.current.options.fontFamily = fontFamily;
+          fitAddon.fit();
+          const { cols: c, rows: r } = termRef.current;
+          window.electronAPI.ptyResize({ id, cols: c, rows: r });
+        } catch {}
+      });
+    } catch {}
     term.focus();
     setTimeout(() => term.focus(), 0);
+
+    const scrollDisp = term.onScroll(() => {
+      try {
+        const buf = term.buffer.active;
+        // viewportY is the top row of the visible area; baseY is the top row
+        // when scrolled fully to the bottom. They match iff we're at the bottom.
+        setIsScrolledUp(buf.viewportY < buf.baseY);
+      } catch {}
+    });
 
     const keyDisp = term.onData((data) => {
       log.debug('xterm onData', JSON.stringify(data));
@@ -160,22 +203,21 @@ const TerminalPaneComponent: React.FC<Props> = ({
       } catch {}
     });
     const handleResize = () => {
-      if (termRef.current && el) {
-        const { width, height } = el.getBoundingClientRect();
-        const newCols = Math.max(20, Math.floor(width / 9));
-        const newRows = Math.max(10, Math.floor(height / 14));
-
-        if (newCols !== cols || newRows !== rows) {
-          termRef.current.resize(newCols, newRows);
-          window.electronAPI.ptyResize({ id, cols: newCols, rows: newRows });
-        }
-      }
+      if (!termRef.current || !el) return;
+      const { width, height } = el.getBoundingClientRect();
+      if (width <= 0 || height <= 0) return;
+      try {
+        fitAddon.fit();
+        const { cols: newCols, rows: newRows } = termRef.current;
+        window.electronAPI.ptyResize({ id, cols: newCols, rows: newRows });
+      } catch {}
     };
 
     const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(el);
 
     disposeFns.current.push(() => keyDisp.dispose());
+    disposeFns.current.push(() => scrollDisp.dispose());
     if (offHistory) disposeFns.current.push(offHistory);
     disposeFns.current.push(offData);
     disposeFns.current.push(offExit);
@@ -223,6 +265,17 @@ const TerminalPaneComponent: React.FC<Props> = ({
     };
   }, [id, cwd, cols, rows, variant, keepAlive, shell, env]);
 
+  const handleScrollToBottomClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const term = termRef.current;
+    if (!term) return;
+    try {
+      term.scrollToBottom();
+    } catch {}
+    setIsScrolledUp(false);
+    term.focus();
+  }, []);
+
   return (
     <div
       className={className}
@@ -230,6 +283,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
         width: '100%',
         height: '100%',
         minHeight: '0',
+        position: 'relative',
         backgroundColor: variant === 'light' ? '#ffffff' : '#1f2937',
         overflow: 'hidden',
         boxSizing: 'border-box',
@@ -271,6 +325,17 @@ const TerminalPaneComponent: React.FC<Props> = ({
           filter: contentFilter || undefined,
         }}
       />
+      {isScrolledUp && (
+        <button
+          type="button"
+          onClick={handleScrollToBottomClick}
+          onMouseDown={(e) => e.stopPropagation()}
+          aria-label="Scroll to bottom"
+          className="absolute bottom-4 left-1/2 z-10 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-700 shadow-md transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
+        >
+          <ArrowDown className="h-4 w-4" aria-hidden="true" />
+        </button>
+      )}
     </div>
   );
 };

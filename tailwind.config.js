@@ -26,7 +26,7 @@ export default {
 					"-apple-system",
 					"sans-serif",
 				],
-				mono: ['"Ioskeley Mono"', "monospace"],
+				mono: ['"IosevkaTerm Nerd Font Mono"', '"IosevkaTerm NFM"', "ui-monospace", "monospace"],
 			},
 			colors: {
 				border: "hsl(var(--border))",

@@ -5,7 +5,7 @@ import { useUpdater } from '@/hooks/useUpdater';
 
 const VersionCard: React.FC = () => {
   const [electronVersion, setElectronVersion] = useState<string>('...');
-  const [emdashVersion, setEmdashVersion] = useState<string>('...');
+  const [nvcodeVersion, setNvcodeVersion] = useState<string>('...');
   const [platform, setPlatform] = useState<string>('');
   const { state: update, download, install, openLatest, progressLabel } = useUpdater();
 
@@ -20,14 +20,14 @@ const VersionCard: React.FC = () => {
           window.electronAPI.getPlatform(),
         ]);
         if (!cancelled) {
-          setEmdashVersion(appVersion);
+          setNvcodeVersion(appVersion);
           setElectronVersion(electronVer);
           setPlatform(appPlatform);
         }
       } catch (error) {
         console.error('Failed to load version info:', error);
         if (!cancelled) {
-          setEmdashVersion('Unknown');
+          setNvcodeVersion('Unknown');
           setElectronVersion('Unknown');
         }
       }
@@ -46,8 +46,8 @@ const VersionCard: React.FC = () => {
       <div className="flex items-start gap-3">
         <div className="flex-1 space-y-1">
           <div className="flex items-baseline gap-2">
-            <span className="text-sm font-medium text-foreground">emdash</span>
-            <code className="font-mono-custom text-sm text-muted-foreground">{emdashVersion}</code>
+            <span className="text-sm font-medium text-foreground">NVCode</span>
+            <code className="font-mono-custom text-sm text-muted-foreground">{nvcodeVersion}</code>
           </div>
         </div>
 

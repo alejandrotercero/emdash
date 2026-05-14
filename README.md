@@ -1,25 +1,25 @@
 
 <p align="center">
-    <img src="./src/assets/images/emdash/emdash_logo.svg#gh-light-mode-only"
-  alt="Emdash" width="900">
-    <img src="./src/assets/images/emdash/emdash_logo_white.svg#gh-dark-mode-only"
-  alt="Emdash" width="900">
+    <img src="./src/assets/images/nvcode/nvcode_logo.svg#gh-light-mode-only"
+  alt="NVCode" width="900">
+    <img src="./src/assets/images/nvcode/nvcode_logo_white.svg#gh-dark-mode-only"
+  alt="NVCode" width="900">
   </p>
 
-emdash is a cross-platform UI layer for running multiple coding agents in parallel — currently supporting OpenAI Codex CLI, Claude Code CLI, Droid (Factory CLI), Gemini CLI, Cursor CLI, Amp Code CLI, GitHub Copilot CLI, and Charm CLI. Each agent runs in its own Git worktree so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
+NVCode is a cross-platform UI layer for running multiple coding agents in parallel — currently supporting OpenAI Codex CLI, Claude Code CLI, Droid (Factory CLI), Gemini CLI, Cursor CLI, Amp Code CLI, GitHub Copilot CLI, and Charm CLI. Each agent runs in its own Git worktree so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
 
 <hr style="border:0; height:1px; background:#d0d7de; margin:24px 0;">
 
 <div align="center" style="margin:24px 0;">
   <a href="https://discord.gg/meqK3A5b" style="display:inline-block; margin-right:24px; text-decoration:none; outline:none; border:none;">
-    <img src="https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white" alt="Join the Emdash Discord" height="40">
+    <img src="https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white" alt="Join the NVCode Discord" height="40">
   </a>
 
-  <a href="https://github.com/generalaction/emdash/releases" style="display:inline-block; margin-right:24px; text-decoration:none; outline:none; border:none;">
+  <a href="https://github.com/nonvariable/nvcode/releases" style="display:inline-block; margin-right:24px; text-decoration:none; outline:none; border:none;">
     <img src="./docs/media/downloadformacos.png" alt="Download app for macOS" height="40">
   </a>
 
-  <a href="https://x.com/emdashsh" style="display:inline-block; text-decoration:none; outline:none; border:none;">
+  <a href="https://x.com/nonvariable" style="display:inline-block; text-decoration:none; outline:none; border:none;">
     <img src="https://img.shields.io/badge/Follow%20on%20X-%23000000.svg?logo=x&logoColor=white" alt="Follow on X" height="40">
   </a>
 </div>
@@ -32,31 +32,31 @@ emdash is a cross-platform UI layer for running multiple coding agents in parall
   <p align="center">
   <img src="./docs/media/modelselector.png" alt="Provider selector showing supported CLIs" width="360">
   <br />
-  <em>Emdash supports the widest range of CLI providers</em>
+  <em>NVCode supports the widest range of CLI providers</em>
   <br />
 </p>
 
 
 <p align="center">
-    <img src="./docs/media/emdash-screenshot.png" alt="Emdash app screenshot" width="100%">
+    <img src="./docs/media/nvcode-screenshot.png" alt="NVCode app screenshot" width="100%">
 </p>
 
 ## Install
 
 ### macOS
 
-- Download for macOS (Apple Silicon): https://github.com/generalaction/emdash/releases/latest/download/emdash-arm64.dmg
-- Download for macOS (Intel x64): https://github.com/generalaction/emdash/releases/latest/download/emdash-x64.dmg
+- Download for macOS (Apple Silicon): https://github.com/nonvariable/nvcode/releases/latest/download/nvcode-arm64.dmg
+- Download for macOS (Intel x64): https://github.com/nonvariable/nvcode/releases/latest/download/nvcode-x64.dmg
 
 ### Linux
 
-- Download AppImage (x64): https://github.com/generalaction/emdash/releases/latest/download/emdash-x64.AppImage
-- Download Debian package (x64): https://github.com/generalaction/emdash/releases/latest/download/emdash-x64.deb
+- Download AppImage (x64): https://github.com/nonvariable/nvcode/releases/latest/download/nvcode-x64.AppImage
+- Download Debian package (x64): https://github.com/nonvariable/nvcode/releases/latest/download/nvcode-x64.deb
 
 ### Windows
 
-- Download Portable Exe (x64): https://github.com/generalaction/emdash/releases/latest/download/emdash-x64.exe
-- Download NSIS Installer (x64): https://github.com/generalaction/emdash/releases/latest/download/emdash-x64-installer.exe
+- Download Portable Exe (x64): https://github.com/nonvariable/nvcode/releases/latest/download/nvcode-x64.exe
+- Download NSIS Installer (x64): https://github.com/nonvariable/nvcode/releases/latest/download/nvcode-x64-installer.exe
 
 ### Manual Installation
 
@@ -64,19 +64,19 @@ Either download the package for your platform from Releases (links above), or bu
 
 ### Homebrew
 
-[![Homebrew](https://img.shields.io/badge/-Homebrew-000000?style=for-the-badge&logo=homebrew&logoColor=FBB040)](https://formulae.brew.sh/cask/emdash)
+[![Homebrew](https://img.shields.io/badge/-Homebrew-000000?style=for-the-badge&logo=homebrew&logoColor=FBB040)](https://formulae.brew.sh/cask/nvcode)
 
-Install and manage emdash with Homebrew:
+Install and manage NVCode with Homebrew:
 
 ```bash
 # Install
-brew install --cask emdash
+brew install --cask nvcode
 
 # Upgrade
-brew upgrade --cask emdash
+brew upgrade --cask nvcode
 
 # Uninstall
-brew uninstall --cask emdash
+brew uninstall --cask nvcode
 ```
 
 If Homebrew does not find the cask yet, run `brew update`.
@@ -142,8 +142,8 @@ gh auth login
 
 1. **Clone this repository**
    ```bash
-   git clone https://github.com/generalaction/emdash.git
-   cd emdash
+   git clone https://github.com/nonvariable/nvcode.git
+   cd nvcode
    ```
 
 2. **Use the correct Node.js version**
@@ -201,7 +201,7 @@ In the chat input, use the provider selector to switch between Codex and Claude 
 
 ### Workspace Types
 
-Emdash supports two types of workspaces:
+NVCode supports two types of workspaces:
 
 #### Worktree Workspaces
 - **Isolated branches** - Each workspace creates a new Git branch and worktree
@@ -236,7 +236,7 @@ Emdash supports two types of workspaces:
 
 ### Git Integration
 
-Emdash provides comprehensive Git integration for keeping your workspaces up-to-date:
+NVCode provides comprehensive Git integration for keeping your workspaces up-to-date:
 
 #### Manual Git Operations
 - **Fetch and Pull** - Manually check for and pull remote updates
@@ -264,7 +264,7 @@ Emdash provides comprehensive Git integration for keeping your workspaces up-to-
 npm run package:mac
 ```
 
-Outputs: `release/emdash-arm64.dmg` and `release/emdash-arm64.zip`
+Outputs: `release/nvcode-arm64.dmg` and `release/nvcode-arm64.zip`
 
 ### Linux
 
@@ -287,18 +287,18 @@ Build the app:
 npm run package:linux
 ```
 
-Outputs: `release/emdash-x64.AppImage` and `release/emdash-x64.deb`
+Outputs: `release/nvcode-x64.AppImage` and `release/nvcode-x64.deb`
 
 **AppImage Usage:**
 ```bash
-chmod +x emdash-x64.AppImage
-./emdash-x64.AppImage
+chmod +x nvcode-x64.AppImage
+./nvcode-x64.AppImage
 ```
 
 **Debian Package:**
 ```bash
-sudo dpkg -i emdash-x64.deb
-emdash  # Run from command line after install
+sudo dpkg -i nvcode-x64.deb
+nvcode  # Run from command line after install
 ```
 
 ### Windows
@@ -319,7 +319,7 @@ Build the app:
 npm run package:win
 ```
 
-Outputs: `release/emdash-x64.exe` (portable) and `release/emdash-x64-installer.exe` (NSIS installer)
+Outputs: `release/nvcode-x64.exe` (portable) and `release/nvcode-x64-installer.exe` (NSIS installer)
 
 ### Cross-Platform Build
 
@@ -342,7 +342,7 @@ npm run package:win      # Windows (requires cross-build tools)
 
 ## Demos
 
-emdash in action
+NVCode in action
 
 - Creating a CONTRIBUTIONS.md file for an open source repository
 
@@ -351,7 +351,7 @@ emdash in action
 
 Running multiple Codex agents in parallel
 
-- Monitor and review the work of several agents within emdash
+- Monitor and review the work of several agents within NVCode
 
 <p align="center">
   <img src="./docs/media/parallel.gif" alt="Demo: parallel agents with preserved stream state" width="100%" style="border-radius:12px">
@@ -360,15 +360,15 @@ Running multiple Codex agents in parallel
 
 Open a Pull Request from the dashboard
 
-- Review diffs, set title/description, choose target branch, and publish to GitHub — all from emdash
+- Review diffs, set title/description, choose target branch, and publish to GitHub — all from NVCode
 
 <p align="center">
-  <img src="./docs/media/openpr.gif" alt="Open a PR from the emdash dashboard" width="100%" style="border-radius:12px">
+  <img src="./docs/media/openpr.gif" alt="Open a PR from the NVCode dashboard" width="100%" style="border-radius:12px">
 </p>
 
 ## Data Persistence
 
-emdash uses SQLite for local data persistence, ensuring your projects and workspaces are maintained across application sessions. All data is stored locally on your machine, providing privacy and offline functionality.
+NVCode uses PGlite for local data persistence, ensuring your projects and workspaces are maintained across application sessions. All data is stored locally on your machine, providing privacy and offline functionality.
 
 ### Database Architecture
 
@@ -429,9 +429,9 @@ CREATE TABLE workspaces (
 
 The SQLite database is automatically created in your system's application data directory:
 
-- **macOS**: `~/Library/Application Support/emdash/emdash.db`
-- **Windows**: `%APPDATA%/emdash/emdash.db`
-- **Linux**: `~/.config/emdash/emdash.db`
+- **macOS**: `~/Library/Application Support/nvcode/nvcode.db`
+- **Windows**: `%APPDATA%/nvcode/nvcode.db`
+- **Linux**: `~/.config/nvcode/nvcode.db`
 
 ### Database Operations
 
@@ -457,13 +457,13 @@ Important
 
 Default locations (packaged app)
 
-- macOS: `~/Library/Application Support/emdash/emdash.db`
-- Windows: `%APPDATA%/emdash/emdash.db`
-- Linux: `~/.config/emdash/emdash.db`
+- macOS: `~/Library/Application Support/nvcode/nvcode.db`
+- Windows: `%APPDATA%/nvcode/nvcode.db`
+- Linux: `~/.config/nvcode/nvcode.db`
 
 Development builds (Electron default)
 
-- macOS: `~/Library/Application Support/Electron/emdash.db`
+- macOS: `~/Library/Application Support/Electron/nvcode.db`
 
 Note: legacy filenames we migrate from (safe to remove if present): `database.sqlite`, `orcbench.db`.
 
@@ -473,23 +473,23 @@ Quick commands (macOS)
 # Quit the app first
 
 # Packaged path (if you ran a built app)
-rm -f "$HOME/Library/Application Support/emdash/emdash.db" \
-      "$HOME/Library/Application Support/emdash/emdash.db-wal" \
-      "$HOME/Library/Application Support/emdash/emdash.db-shm"
+rm -f "$HOME/Library/Application Support/nvcode/nvcode.db" \
+      "$HOME/Library/Application Support/nvcode/nvcode.db-wal" \
+      "$HOME/Library/Application Support/nvcode/nvcode.db-shm"
 
 # Dev path (vite/electron dev)
-rm -f "$HOME/Library/Application Support/Electron/emdash.db" \
-      "$HOME/Library/Application Support/Electron/emdash.db-wal" \
-      "$HOME/Library/Application Support/Electron/emdash.db-shm"
+rm -f "$HOME/Library/Application Support/Electron/nvcode.db" \
+      "$HOME/Library/Application Support/Electron/nvcode.db-wal" \
+      "$HOME/Library/Application Support/Electron/nvcode.db-shm"
 
 # Optional: remove legacy DB filenames if they exist
-rm -f "$HOME/Library/Application Support/emdash/database.sqlite" \
-      "$HOME/Library/Application Support/emdash/orcbench.db"
+rm -f "$HOME/Library/Application Support/nvcode/database.sqlite" \
+      "$HOME/Library/Application Support/nvcode/orcbench.db"
 rm -f "$HOME/Library/Application Support/Electron/database.sqlite" \
       "$HOME/Library/Application Support/Electron/orcbench.db"
 
-# One-liner to locate any emdash.db under your home folder (preview only)
-find "$HOME" -type f -name 'emdash.db*' -print
+# One-liner to locate any nvcode.db under your home folder (preview only)
+find "$HOME" -type f -name 'nvcode.db*' -print
 ```
 
 ## What's Next
@@ -506,12 +506,12 @@ find "$HOME" -type f -name 'emdash.db*' -print
 ## Security & Privacy
 
 - We take data security and privacy seriously. See docs/telemetry.md for exact details.
-- Your code, chats, and repository contents stay local. Emdash does not send your code or chats to us.
+- Your code, chats, and repository contents stay local. NVCode does not send your code or chats to us.
 - Using third-party CLIs (e.g., Codex, Claude, GitHub CLI) may transmit data to those providers per their policies.
 
 ### Telemetry
 
-- By default, Emdash collects basic, anonymous usage statistics via PostHog to understand which features are used and improve stability. This helps us prioritize development and track aggregate adoption. We only send coarse aggregates (e.g., counts/buckets of projects and workspaces) and session duration — never code, paths, or content.
+- By default, NVCode collects basic, anonymous usage statistics via PostHog to understand which features are used and improve stability. This helps us prioritize development and track aggregate adoption. We only send coarse aggregates (e.g., counts/buckets of projects and workspaces) and session duration — never code, paths, or content.
 - What we collect:
   - Lifecycle events (e.g., app start/close), feature usage events (feature name only), and non-identifying context (app version, platform, architecture, Electron version, install source).
   - We do not collect code, prompts, repository names, file paths, environment variables, or personally identifiable information.

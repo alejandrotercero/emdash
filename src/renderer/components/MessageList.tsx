@@ -9,6 +9,7 @@ import StreamingAction from './StreamingAction';
 import { Badge } from '@/components/ui/badge';
 import FileTypeIcon from '@/components/ui/file-type-icon';
 import ThinkingDots from '@/components/ai-elements/thinking-dots';
+import { ArrowDown } from 'lucide-react';
 
 function basename(p: string): string {
   const b = p.split('/').pop() || p;
@@ -38,13 +39,26 @@ const MessageList: React.FC<MessageListProps> = ({
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isProgrammaticScroll = useRef(false);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
-  const scrollToBottom = useCallback(() => {
-    if (messagesEndRef.current && shouldAutoScroll) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+  const scrollToBottom = useCallback((force = false) => {
+    if (!shouldAutoScroll && !force) return;
+    // Double RAF: first waits for React to commit layout, second waits for paint
+    // so scrollHeight reflects the fully rendered content (critical for bulk loads)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+        isProgrammaticScroll.current = true;
+        container.scrollTop = container.scrollHeight;
+        // Reset flag after the scroll event has had a chance to fire
+        requestAnimationFrame(() => {
+          isProgrammaticScroll.current = false;
+        });
+      });
+    });
   }, [shouldAutoScroll]);
 
   const isNearBottom = useCallback(() => {
@@ -56,6 +70,7 @@ const MessageList: React.FC<MessageListProps> = ({
   }, []);
 
   const handleScroll = useCallback(() => {
+    if (isProgrammaticScroll.current) return;
     const nearBottom = isNearBottom();
     setShouldAutoScroll(nearBottom);
 
@@ -76,19 +91,44 @@ const MessageList: React.FC<MessageListProps> = ({
     };
   }, [handleScroll]);
 
+  const prevMessageCountRef = useRef(0);
+
   useEffect(() => {
-    scrollToBottom();
+    const prevCount = prevMessageCountRef.current;
+    const currCount = messages.length;
+    prevMessageCountRef.current = currCount;
+    // Force scroll when many messages load at once (e.g. resume conversation)
+    const isBulkLoad = currCount - prevCount > 5;
+    scrollToBottom(isBulkLoad);
   }, [messages, streamingOutput, scrollToBottom]);
 
+  const handleScrollToBottomClick = useCallback(() => {
+    setShouldAutoScroll(true);
+    setIsUserScrolling(false);
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    isProgrammaticScroll.current = true;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const c = scrollContainerRef.current;
+        if (c) c.scrollTop = c.scrollHeight;
+        requestAnimationFrame(() => {
+          isProgrammaticScroll.current = false;
+        });
+      });
+    });
+  }, []);
+
   return (
-    <div
-      ref={scrollContainerRef}
-      className="flex-1 overflow-y-auto px-6 pb-2 pt-6"
-      style={{
-        maskImage: 'linear-gradient(to bottom, black 0%, black 93%, transparent 100%)',
-        WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 93%, transparent 100%)',
-      }}
-    >
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto px-6 pb-2 pt-6"
+        style={{
+          maskImage: 'linear-gradient(to bottom, black 0%, black 93%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 93%, transparent 100%)',
+        }}
+      >
       <div className="mx-auto max-w-4xl space-y-6">
         {messages.map((message) => {
           const isUserMessage = message.sender === 'user';
@@ -139,7 +179,7 @@ const MessageList: React.FC<MessageListProps> = ({
                         li: ({ children }) => <li className="ml-2">{children}</li>,
                         p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                         strong: ({ children }) => (
-                          <strong className="font-semibold">{children}</strong>
+                          <span className="font-normal">{children}</span>
                         ),
                         em: ({ children }) => <em className="italic">{children}</em>,
                       }}
@@ -215,6 +255,17 @@ const MessageList: React.FC<MessageListProps> = ({
 
         <div ref={messagesEndRef} />
       </div>
+      </div>
+      {isUserScrolling && (
+        <button
+          type="button"
+          onClick={handleScrollToBottomClick}
+          aria-label="Scroll to bottom"
+          className="absolute bottom-6 left-1/2 z-10 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-700 shadow-md transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
+        >
+          <ArrowDown className="h-4 w-4" aria-hidden="true" />
+        </button>
+      )}
     </div>
   );
 };
