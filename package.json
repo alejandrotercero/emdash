@@ -133,11 +133,11 @@
           ]
         }
       ],
-      "icon": "src/assets/images/nvcode/nvcode.icns",
+      "icon": "src/assets/images/nvcode/icon.icns",
       "notarize": false
     },
     "dmg": {
-      "icon": "src/assets/images/nvcode/nvcode.icns"
+      "icon": "src/assets/images/nvcode/icon.icns"
     },
     "linux": {
       "category": "Development",
