@@ -101,6 +101,27 @@ const ChatInterface: React.FC<Props> = ({
 		provider !== "charm" &&
 		provider !== "auggie";
 
+	// Resume support: once a tab has been launched at least once, relaunch the
+	// agent CLI with its "continue most recent session" flag so the conversation
+	// resumes instead of starting fresh. Gated per provider+workspace via a
+	// localStorage marker set on first successful start (see TerminalPane below).
+	const launchMarkerKey = `agent:launched:${provider}:${workspace.id}`;
+	const resumeShellArgs = useMemo<string[] | undefined>(() => {
+		const baseProvider = provider.startsWith("custom-claude-")
+			? "claude"
+			: provider;
+		const resumeArgs = (providerMeta as any)[baseProvider]?.resumeArgs as
+			| string[]
+			| undefined;
+		if (!resumeArgs || resumeArgs.length === 0) return undefined;
+		let launchedBefore = false;
+		try {
+			launchedBefore = window.localStorage.getItem(launchMarkerKey) === "1";
+		} catch {}
+		return launchedBefore ? resumeArgs : undefined;
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [provider, workspace.id]);
+
 	const claudeStream = useClaudeStream(
 		(provider === "claude" || isCustomClaude) &&
 			!providerMeta.claude.terminalOnly
@@ -602,6 +623,7 @@ const ChatInterface: React.FC<Props> = ({
 									id={`${provider}-main-${workspace.id}`}
 									cwd={workspace.path}
 									shell={provider.startsWith('custom-claude-') ? 'claude' : providerMeta[provider].cli}
+									shellArgs={resumeShellArgs}
 									env={provider.startsWith('custom-claude-') ? customClaudeEnv || undefined : undefined}
 									keepAlive={true}
 									onActivity={() => {
@@ -616,8 +638,23 @@ const ChatInterface: React.FC<Props> = ({
 									onStartError={() => {
 										// Mark CLI missing or failed to launch
 										setCliStartFailed(true);
+										// A resume attempt that bails out instantly (e.g. no prior
+										// session to continue) should self-heal: drop the marker so the
+										// next open starts a fresh session instead of retrying --continue.
+										if (resumeShellArgs) {
+											try {
+												window.localStorage.removeItem(launchMarkerKey);
+											} catch {}
+										}
 									}}
-									onStartSuccess={() => setCliStartFailed(false)}
+									onStartSuccess={() => {
+										setCliStartFailed(false);
+										// Record that this tab has a session now, so subsequent
+										// launches resume it with the provider's continue flag.
+										try {
+											window.localStorage.setItem(launchMarkerKey, "1");
+										} catch {}
+									}}
 									variant={effectiveTheme === "dark" ? "dark" : "light"}
 									themeOverride={
 										provider === "charm"

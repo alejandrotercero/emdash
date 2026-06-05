@@ -30,13 +30,14 @@ export function registerPtyIpc(): void {
         id: string;
         cwd?: string;
         shell?: string;
+        shellArgs?: string[];
         env?: Record<string, string>;
         cols?: number;
         rows?: number;
       }
     ) => {
       try {
-        const { id, cwd, shell, env, cols, rows } = args;
+        const { id, cwd, shell, shellArgs, env, cols, rows } = args;
 
         // Log custom env vars if present
         if (env && Object.keys(env).length > 0) {
@@ -50,7 +51,7 @@ export function registerPtyIpc(): void {
 
         // Reuse existing PTY if present; otherwise create new
         const existing = getPty(id);
-        const proc = existing ?? startPty({ id, cwd, shell, env, cols, rows });
+        const proc = existing ?? startPty({ id, cwd, shell, args: shellArgs, env, cols, rows });
         log.debug('pty:start OK', { id, cwd, shell, cols, rows, reused: !!existing, hasEnv: !!env });
         const wc = event.sender;
         owners.set(id, wc);

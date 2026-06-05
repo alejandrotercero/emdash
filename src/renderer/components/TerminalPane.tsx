@@ -10,6 +10,7 @@ type Props = {
   cols?: number;
   rows?: number;
   shell?: string;
+  shellArgs?: string[]; // CLI args passed to the shell program (e.g. ['--continue'])
   env?: Record<string, string>; // Custom environment variables
   className?: string;
   variant?: 'dark' | 'light';
@@ -27,6 +28,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
   cols = 80,
   rows = 24,
   shell,
+  shellArgs,
   env,
   className,
   variant = 'dark',
@@ -234,6 +236,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
           cols,
           rows,
           shell,
+          shellArgs,
           env,
         });
         if (!res?.ok) {
@@ -263,7 +266,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
       term.dispose();
       termRef.current = null;
     };
-  }, [id, cwd, cols, rows, variant, keepAlive, shell, env]);
+  }, [id, cwd, cols, rows, variant, keepAlive, shell, shellArgs, env]);
 
   const handleScrollToBottomClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();

@@ -20,6 +20,9 @@ export type ProviderMeta = {
   helpUrl?: string;
   idlePatterns?: RegExp[];
   busyPatterns?: RegExp[];
+  // CLI args used to resume the most recent session in the cwd. Applied only
+  // when the tab has been launched before (an existing session exists).
+  resumeArgs?: string[];
 };
 
 export const providerMeta: Record<UiProvider, ProviderMeta> = {
@@ -55,6 +58,7 @@ export const providerMeta: Record<UiProvider, ProviderMeta> = {
     icon: '../../assets/images/opencode.png',
     terminalOnly: true,
     cli: 'opencode',
+    resumeArgs: ['--continue'],
     helpUrl: 'https://opencode.ai/docs/cli/',
     idlePatterns: [/Ready|Awaiting|Press Enter|Next command/i],
     busyPatterns: [/Thinking\.{0,3}/i, /waiting\s+for\s+response/i, /esc\s*to\s*cancel/i],
@@ -73,6 +77,7 @@ export const providerMeta: Record<UiProvider, ProviderMeta> = {
     icon: '../../assets/images/openai.png',
     terminalOnly: true,
     cli: 'codex',
+    resumeArgs: ['resume', '--last'],
     helpUrl: 'https://developers.openai.com/codex/quickstart',
     idlePatterns: [
       /Ready|Awaiting input|Press Enter/i,
@@ -91,6 +96,7 @@ export const providerMeta: Record<UiProvider, ProviderMeta> = {
     icon: '../../assets/images/claude.png',
     terminalOnly: true,
     cli: 'claude',
+    resumeArgs: ['--continue'],
     helpUrl: 'https://docs.claude.com/en/docs/claude-code/quickstart',
     idlePatterns: [/Ready|Awaiting|Next command|Use \/login/i],
     busyPatterns: [
@@ -154,6 +160,7 @@ export const providerMeta: Record<UiProvider, ProviderMeta> = {
     icon: '../../assets/images/kimi.png',
     terminalOnly: true,
     cli: 'kimi',
+    resumeArgs: ['--continue'],
     helpUrl: 'https://kimi.com',
     idlePatterns: [/\d{1,2}:\d{2}\s+agent$/],
     busyPatterns: [

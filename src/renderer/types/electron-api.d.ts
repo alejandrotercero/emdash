@@ -20,6 +20,7 @@ declare global {
         id: string;
         cwd?: string;
         shell?: string;
+        shellArgs?: string[];
         env?: Record<string, string>;
         cols?: number;
         rows?: number;
@@ -562,6 +563,7 @@ export interface ElectronAPI {
     id: string;
     cwd?: string;
     shell?: string;
+    shellArgs?: string[];
     env?: Record<string, string>;
     cols?: number;
     rows?: number;

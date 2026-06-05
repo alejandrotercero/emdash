@@ -21,11 +21,12 @@ export function startPty(options: {
   id: string;
   cwd?: string;
   shell?: string;
+  args?: string[];
   env?: NodeJS.ProcessEnv;
   cols?: number;
   rows?: number;
 }): IPty {
-  const { id, cwd, shell, env, cols = 80, rows = 24 } = options;
+  const { id, cwd, shell, args, env, cols = 80, rows = 24 } = options;
 
   const useShell = shell || getDefaultShell();
   const useCwd = cwd || process.cwd() || os.homedir();
@@ -48,7 +49,7 @@ export function startPty(options: {
     }
   }
 
-  const proc = pty.spawn(useShell, [], {
+  const proc = pty.spawn(useShell, args || [], {
     name: 'xterm-256color',
     cols,
     rows,

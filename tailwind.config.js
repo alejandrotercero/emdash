@@ -75,6 +75,21 @@ export default {
 				md: "calc(var(--radius) - 2px)",
 				sm: "calc(var(--radius) - 4px)",
 			},
+			// Refined, low-opacity, multi-layer shadows. Overriding the same-named
+			// keys upgrades every existing `shadow-*` in the app to an elegant,
+			// diffuse elevation while leaving `shadow-inner`/`shadow-none` intact.
+			boxShadow: {
+				sm: "0 1px 2px 0 rgb(0 0 0 / 0.04)",
+				DEFAULT:
+					"0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.04)",
+				md: "0 2px 8px -2px rgb(0 0 0 / 0.06), 0 4px 16px -4px rgb(0 0 0 / 0.05)",
+				lg: "0 4px 20px -4px rgb(0 0 0 / 0.08), 0 8px 32px -8px rgb(0 0 0 / 0.06)",
+				xl: "0 8px 40px -8px rgb(0 0 0 / 0.10), 0 16px 56px -12px rgb(0 0 0 / 0.08)",
+				elegant: "0 1px 2px 0 rgb(0 0 0 / 0.04), 0 6px 24px -8px rgb(0 0 0 / 0.08)",
+			},
+			transitionTimingFunction: {
+				elegant: "cubic-bezier(0.4, 0, 0.2, 1)",
+			},
 			keyframes: {
 				"accordion-down": {
 					from: {
